@@ -1052,7 +1052,7 @@ private:
     unsigned m_displayInterval = 5;
 
     // Number of seconds to wait before triggering a no work timeout from pool
-    unsigned m_worktimeout = 180;
+    unsigned m_worktimeout = 880;
     // Number of seconds to wait before triggering a response timeout from pool
     unsigned m_responsetimeout = 2;
     // Number of minutes to wait on a failover pool before trying to go back to primary. In minutes

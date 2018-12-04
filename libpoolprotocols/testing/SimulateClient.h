@@ -17,7 +17,7 @@ class SimulateClient : public PoolClient, Worker
 {
 public:
     SimulateClient(unsigned const& difficulty, unsigned const& block);
-    ~SimulateClient();
+    ~SimulateClient() override;
 
     void connect() override;
     void disconnect() override;
@@ -26,7 +26,7 @@ public:
     bool isPendingState() override { return false; }
     string ActiveEndPoint() override { return ""; };
 
-    void submitHashrate(string const& rate) override;
+    void submitHashrate(string const& rate, string const& id) override;
     void submitSolution(const Solution& solution) override;
 
 private:

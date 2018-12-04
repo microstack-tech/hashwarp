@@ -20,7 +20,7 @@ HunterGate(
 )
 
 project(ethminer)
-set(PROJECT_VERSION 0.17.0-alpha.1.ubqhash)
+set(PROJECT_VERSION 0.18.0-alpha.1.ubqhash)
 
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release RelWithDebInfo)
 
@@ -53,14 +53,11 @@ function(configureProject)
 	endif()
 endfunction()
 
-hunter_add_package(Boost COMPONENTS system filesystem)
-find_package(Boost CONFIG REQUIRED COMPONENTS system filesystem)
+hunter_add_package(Boost COMPONENTS system filesystem thread)
+find_package(Boost CONFIG REQUIRED COMPONENTS system filesystem thread)
 
 hunter_add_package(jsoncpp)
 find_package(jsoncpp CONFIG REQUIRED)
-
-hunter_add_package(libjson-rpc-cpp)
-find_package(libjson-rpc-cpp CONFIG REQUIRED)
 
 hunter_add_package(ethash)
 find_package(ethash CONFIG REQUIRED)

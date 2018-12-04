@@ -9,6 +9,9 @@
 #include <libethcore/Miner.h>
 
 #include "PoolClient.h"
+#include "getwork/EthGetworkClient.h"
+#include "stratum/EthStratumClient.h"
+#include "testing/SimulateClient.h"
 
 using namespace std;
 
@@ -16,65 +19,84 @@ namespace dev
 {
 namespace eth
 {
-
 class PoolManager
 {
 public:
-    PoolManager(PoolClient* client, MinerType const& minerType, unsigned maxTries,
-        unsigned failovertimeout);
+    PoolManager(unsigned maxTries, unsigned failovertimeout, unsigned ergodicity,
+        bool reportHashrate, unsigned workTimeout, unsigned responseTimeout, unsigned pollInterval,
+        unsigned benchmarkBlock);
     static PoolManager& p() { return *m_this; }
     void addConnection(URI& conn);
     void clearConnections();
     Json::Value getConnectionsJson();
     int setActiveConnection(unsigned int idx);
+    int setActiveConnection(std::string& host);
     URI getActiveConnectionCopy();
     int removeConnection(unsigned int idx);
     void start();
     void stop();
     bool isConnected() { return p_client->isConnected(); };
     bool isRunning() { return m_running; };
+    int getCurrentEpoch();
     double getCurrentDifficulty();
     unsigned getConnectionSwitches();
     unsigned getEpochChanges();
 
 private:
-    void suspendMining();
+    void rotateConnect();
 
-    unsigned m_hashrateReportingTime = 60;
-    unsigned m_hashrateReportingTimePassed = 0;
-    unsigned m_failoverTimeout =
-        0;  // After this amount of time in minutes of mining on a failover pool return to "primary"
+    void setClientHandlers();
+    void unsetClientHandlers();
 
-    void check_failover_timeout(const boost::system::error_code& ec);
+    void showEpoch();
+    void showDifficulty();
+    int setActiveConnectionCommon(unsigned int idx, UniqueGuard& l);
+
+    unsigned m_hrReportingInterval = 60;
+
+    unsigned m_failoverTimeout;  // After this amount of time in minutes of mining on a failover
+                                 // pool return to "primary"
+
+    unsigned m_workTimeout;  // Amount of time, in seconds, with no work which causes a
+                             // disconnection
+
+    unsigned m_responseTimeout;  // Amount of time, in milliseconds, with no response from pool
+                                 // which causes a disconnection
+
+    unsigned m_pollInterval;  // Interval, in milliseconds, among polls to a getwork provider
+
+    unsigned m_benchmarkBlock;  // Block number to test simulation against
+
+    void failovertimer_elapsed(const boost::system::error_code& ec);
+    void submithrtimer_elapsed(const boost::system::error_code& ec);
 
     std::atomic<bool> m_running = {false};
-    void workLoop();
+    std::atomic<bool> m_stopping = {false};
 
+    bool m_hashrate;           // Whether or not submit hashrate to work provider (pool)
+    std::string m_hashrateId;  // The unique client Id to use when submitting hashrate
+    unsigned m_ergodicity = 0;
     unsigned m_connectionAttempt = 0;
     unsigned m_maxConnectionAttempts = 0;
-    std::string m_lastConnectedHost = ""; // gets set when a connection has been established
+    std::string m_selectedHost = "";  // Holds host name (and endpoint) of selected connection
     std::atomic<unsigned> m_connectionSwitches = {0};
 
     std::vector<URI> m_connections;
     unsigned m_activeConnectionIdx = 0;
     mutable Mutex m_activeConnectionMutex;
 
-    std::thread m_workThread;
-
-    h256 m_lastBoundary = h256();
+    WorkPackage m_currentWp;
 
     boost::asio::io_service::strand m_io_strand;
     boost::asio::deadline_timer m_failovertimer;
-    PoolClient* p_client;
-    MinerType m_minerType;
+    boost::asio::deadline_timer m_submithrtimer;
 
-    int m_lastEpoch = 0;
+    PoolClient* p_client = nullptr;
+
     std::atomic<unsigned> m_epochChanges = {0};
-    double m_lastDifficulty = 0.0;
 
     static PoolManager* m_this;
 };
 
 }  // namespace eth
 }  // namespace dev
-

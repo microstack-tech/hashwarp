@@ -21,12 +21,15 @@
 
 #pragma once
 
+#include <signal.h>
 #include <atomic>
 #include <cassert>
 #include <string>
 #include <thread>
 
 #include "Guards.h"
+
+extern bool g_exitOnError;
 
 namespace dev
 {
@@ -42,7 +45,7 @@ enum class WorkerState
 class Worker
 {
 public:
-    Worker(std::string const& _name) : m_name(_name) {}
+    Worker(std::string _name) : m_name(std::move(_name)) {}
 
     Worker(Worker const&) = delete;
     Worker& operator=(Worker const&) = delete;
@@ -52,12 +55,13 @@ public:
     /// Starts worker thread; causes startedWorking() to be called.
     void startWorking();
 
-    /// Inform worker thread it should stop
-    void requestStopWorking();
+    /// Triggers worker thread it should stop
+    void triggerStopWorking();
 
-    /// Stop worker thread; causes call to stopWorking(). Waits till working is stopped
+    /// Stop worker thread; causes call to stopWorking() and waits till thread has stopped.
     void stopWorking();
 
+    /// Whether or not this worker should stop
     bool shouldStop() const { return m_state != WorkerState::Started; }
 
 private:

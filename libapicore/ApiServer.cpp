@@ -238,8 +238,6 @@ void ApiServer::start()
     if (m_portnumber == 0)
         return;
 
-    m_running.store(true, std::memory_order_relaxed);
-
     tcp::endpoint endpoint(boost::asio::ip::address::from_string(m_address), m_portnumber);
 
     // Try to bind to port number
@@ -263,6 +261,7 @@ void ApiServer::start()
     cnote << "Api server listening on port " + to_string(m_acceptor.local_endpoint().port())
           << (m_password.empty() ? "." : ". Authentication needed.");
     m_workThread = std::thread{boost::bind(&ApiServer::begin_accept, this)};
+    m_running.store(true, std::memory_order_relaxed);
 }
 
 void ApiServer::stop()
@@ -273,6 +272,7 @@ void ApiServer::stop()
 
     m_acceptor.cancel();
     m_acceptor.close();
+    m_workThread.join();
     m_running.store(false, std::memory_order_relaxed);
 
     // Dispose all sessions (if any)
@@ -284,7 +284,6 @@ void ApiServer::begin_accept()
     if (!isRunning())
         return;
 
-    dev::setThreadName("Api");
     auto session = std::make_shared<ApiConnection>(++lastSessionId, m_readonly, m_password);
     m_acceptor.async_accept(
         session->socket(), m_io_strand.wrap(boost::bind(&ApiServer::handle_accept, this, session,
@@ -309,7 +308,6 @@ void ApiServer::handle_accept(std::shared_ptr<ApiConnection> session, boost::sys
                 m_sessions.erase(m_sessions.begin() + index);
             }
         });
-        dev::setThreadName("Api");
         m_sessions.push_back(session);
         cnote << "New API session from " << session->socket().remote_endpoint();
         session->start();
@@ -502,13 +500,7 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
             if (!uri.Valid())
             {
                 jResponse["error"]["code"] = -422;
-                jResponse["error"]["message"] = ("Invalid URI " + uri.String());
-                return;
-            }
-            if (!uri.KnownScheme())
-            {
-                jResponse["error"]["code"] = -422;
-                jResponse["error"]["message"] = ("Unknown URI scheme " + uri.Scheme());
+                jResponse["error"]["message"] = ("Invalid URI " + uri.str());
                 return;
             }
 
@@ -545,18 +537,32 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
         Json::Value jRequestParams;
         if (!getRequestValue("params", jRequestParams, jRequest, false, jResponse))
             return;
-
-        unsigned index;
-        if (!getRequestValue("index", index, jRequestParams, false, jResponse))
-            return;
-
-        if (PoolManager::p().setActiveConnection(index))
+        if (jRequestParams.isMember("index"))
         {
-            jResponse["error"]["code"] = -422;
-            jResponse["error"]["message"] = "Index out of bounds";
-            return;
+            unsigned index;
+            if (getRequestValue("index", index, jRequestParams, false, jResponse))
+            {
+                if (PoolManager::p().setActiveConnection(index) == -1)
+                {
+                    jResponse["error"]["code"] = -422;
+                    jResponse["error"]["message"] = "Index out of bounds";
+                    return;
+                }
+            }
         }
-
+        else
+        {
+            string uri;
+            if (getRequestValue("URI", uri, jRequestParams, false, jResponse))
+            {
+                if (PoolManager::p().setActiveConnection(uri) == -1)
+                {
+                    jResponse["error"]["code"] = -422;
+                    jResponse["error"]["message"] = "Host match not found";
+                    return;
+                }
+            }
+        }
         jResponse["result"] = true;
     }
 
@@ -662,13 +668,10 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
         if (miner)
         {
             if (pause)
-            {
-                miner->set_mining_paused(MinigPauseReason::MINING_PAUSED_API);
-            }
+                miner->pause(MinerPauseEnum::PauseDueToAPIRequest);
             else
-            {
-                miner->clear_mining_paused(MinigPauseReason::MINING_PAUSED_API);
-            }
+                miner->resume(MinerPauseEnum::PauseDueToAPIRequest);
+
             jResponse["result"] = true;
         }
         else
@@ -939,11 +942,10 @@ Json::Value ApiConnection::getMinerStatDetailPerMiner(const WorkingProgress& p,
     jshares["accepted"] = s.getAccepts(index);
     jshares["rejected"] = s.getRejects(index);
     jshares["invalid"] = s.getFailures(index);
-    jshares["acceptedstale"] = s.getAcceptedStales(index);
+
     auto solution_lastupdated =
         std::chrono::duration_cast<std::chrono::seconds>(now - s.getLastUpdated(index));
-    jshares["lastupdate"] =
-        uint64_t(solution_lastupdated.count());  // last update of this gpu stat was x seconds ago
+    jshares["lastupdate"] = uint64_t(solution_lastupdated.count());  // last update of this gpu stat was x seconds ago
     jRes["shares"] = jshares;
 
 
@@ -964,10 +966,9 @@ Json::Value ApiConnection::getMinerStatDetailPerMiner(const WorkingProgress& p,
     /* Pause infos */
     if (miner && index < p.miningIsPaused.size())
     {
-        MinigPauseReason pause_reason = miner->get_mining_paused();
-        MiningPause m;
-        jRes["ispaused"] = m.is_mining_paused(pause_reason);
-        jRes["pause_reason"] = m.get_mining_paused_string(pause_reason);
+        bool paused = miner->paused();
+        jRes["ispaused"] = paused;
+        jRes["pause_reason"] = (paused ? miner->pausedString() : Json::Value::null);
     }
     else
     {
@@ -1001,7 +1002,6 @@ Json::Value ApiConnection::getMinerStatDetail()
 
     SolutionStats s = Farm::f().getSolutionStats();
     WorkingProgress p = Farm::f().miningProgress();
-    WorkPackage w = Farm::f().work();
 
     // ostringstream version;
     Json::Value gpus;
@@ -1022,7 +1022,7 @@ Json::Value ApiConnection::getMinerStatDetail()
     /* connection info */
     auto connection = PoolManager::p().getActiveConnectionCopy();
     Json::Value jconnection;
-    jconnection["uri"] = connection.String();
+    jconnection["uri"] = connection.str();
     // jconnection["endpoint"] = PoolManager::p().getClient()->ActiveEndPoint();
     jconnection["isconnected"] = PoolManager::p().isConnected();
     jconnection["switched"] = PoolManager::p().getConnectionSwitches();
@@ -1030,10 +1030,7 @@ Json::Value ApiConnection::getMinerStatDetail()
 
     /* Pool info */
     jRes["difficulty"] = PoolManager::p().getCurrentDifficulty();
-    if (w)
-        jRes["epoch"] = w.epoch;
-    else
-        jRes["epoch"] = Json::Value::null;
+    jRes["epoch"] = PoolManager::p().getCurrentEpoch();
     jRes["epoch_changes"] = PoolManager::p().getEpochChanges();
 
     /* basic setup */
@@ -1069,7 +1066,6 @@ Json::Value ApiConnection::getMinerStatDetail()
     jshares["accepted"] = s.getAccepts();
     jshares["rejected"] = s.getRejects();
     jshares["invalid"] = s.getFailures();
-    jshares["acceptedstale"] = s.getAcceptedStales();
     auto solution_lastupdated =
         std::chrono::duration_cast<std::chrono::seconds>(now - s.getLastUpdated());
     jshares["lastupdate"] =

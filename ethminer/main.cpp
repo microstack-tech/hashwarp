@@ -240,7 +240,7 @@ public:
     {
         std::queue<string> warnings;
 
-        CLI::App app("Ethminer - GPU Ethash miner");
+        CLI::App app("Ubqminer - GPU Ubqhash miner");
 
         bool bhelp = false;
         string shelpExt;
@@ -808,12 +808,12 @@ public:
 
     void help()
     {
-        cout << "Ethminer - GPU ethash miner" << endl
-             << "minimal usage : ethminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
+        cout << "Ubqminer - GPU ubqhash miner" << endl
+             << "minimal usage : ubqminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
              << endl
              << "Devices type options :" << endl
              << endl
-             << "    By default ethminer will try to use all devices types" << endl
+             << "    By default ubqminer will try to use all devices types" << endl
              << "    it can detect. Optionally you can limit this behavior" << endl
              << "    setting either of the following options" << endl
 #if ETH_ETHASHCL
@@ -831,7 +831,7 @@ public:
              << endl
              << "                        For an explication and some samples about" << endl
              << "                        how to fill in this value please use" << endl
-             << "                        ethminer --help-ext con" << endl
+             << "                        ubqminer --help-ext con" << endl
              << endl
 
              << "Common Options :" << endl
@@ -899,7 +899,7 @@ public:
         {
             cout << "API Interface Options :" << endl
                  << endl
-                 << "    Ethminer can provide two interfaces for monitor and or control" << endl
+                 << "    Ubqminer can provide two interfaces for monitor and or control" << endl
                  << "    Please note that information delivered by API and Http interface" << endl
                  << "    may depend on value of --HWMON" << endl
                  << endl
@@ -1031,7 +1031,7 @@ public:
                  << "                        Set number of reconnection retries to same pool"
                  << endl
                  << "    --failover-timeout  INT[0 .. ] Default not set" << endl
-                 << "                        Sets the number of minutes ethminer can stay" << endl
+                 << "                        Sets the number of minutes ubqminer can stay" << endl
                  << "                        connected to a fail-over pool before trying to" << endl
                  << "                        reconnect to the primary (the first) connection."
                  << endl
@@ -1050,10 +1050,10 @@ public:
                  << "                        0 No monitoring" << endl
                  << "                        1 Monitor temperature and fan percentage" << endl
                  << "                        2 As 1 plus monitor power drain" << endl
-                 << "    --exit              FLAG Stop ethminer whenever an error is encountered"
+                 << "    --exit              FLAG Stop ubqminer whenever an error is encountered"
                  << endl
                  << "    --ergodicity        INT[0 .. 2] Default = 0" << endl
-                 << "                        Sets how ethminer chooses the nonces segments to"
+                 << "                        Sets how ubqminer chooses the nonces segments to"
                  << endl
                  << "                        search on." << endl
                  << "                        0 A search segment is picked at startup" << endl
@@ -1189,16 +1189,16 @@ public:
                  << "    You can add as many -P arguments as you want. Every -P specification"
                  << endl
                  << "    after the first one behaves as fail-over connection. When also the" << endl
-                 << "    the fail-over disconnects ethminer passes to the next connection" << endl
+                 << "    the fail-over disconnects ubqminer passes to the next connection" << endl
                  << "    available and so on till the list is exhausted. At that moment" << endl
-                 << "    ethminer restarts the connection cycle from the first one." << endl
+                 << "    ubqminer restarts the connection cycle from the first one." << endl
                  << "    An exception to this behavior is ruled by the --failover-timeout" << endl
-                 << "    command line argument. See 'ethminer -H misc' for details." << endl
+                 << "    command line argument. See 'ubqminer -H misc' for details." << endl
                  << endl
                  << "    The special notation '-P exit' stops the failover loop." << endl
-                 << "    When ethminer reaches this kind of connection it simply quits." << endl
+                 << "    When ubqminer reaches this kind of connection it simply quits." << endl
                  << endl
-                 << "    When using stratum mode ethminer tries to auto-detect the correct" << endl
+                 << "    When using stratum mode ubqminer tries to auto-detect the correct" << endl
                  << "    flavour provided by the pool. Should be fine in 99% of the cases." << endl
                  << "    Nevertheless you might want to fine tune the stratum flavour by" << endl
                  << "    any of of the following valid schemes :" << endl
@@ -1455,14 +1455,14 @@ int main(int argc, char** argv)
     auto* bi = ethminer_get_buildinfo();
     cout << endl
          << endl
-         << "ethminer " << bi->project_version << endl
+         << "ubqminer " << bi->project_version << endl
          << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id << endl
          << endl;
 
     if (argc < 2)
     {
         cerr << "No arguments specified. " << endl
-             << "Try 'ethminer --help' to get a list of arguments." << endl
+             << "Try 'ubqminer --help' to get a list of arguments." << endl
              << endl;
         return 1;
     }
@@ -1515,7 +1515,7 @@ int main(int argc, char** argv)
         catch (std::invalid_argument& ex1)
         {
             cerr << "Error: " << ex1.what() << endl
-                 << "Try ethminer --help to get an explained list of arguments." << endl
+                 << "Try ubqminer --help to get an explained list of arguments." << endl
                  << endl;
             return 1;
         }

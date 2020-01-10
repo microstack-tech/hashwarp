@@ -17,14 +17,38 @@ namespace eth
 {
 struct Session
 {
+    // Tstamp of sessio start
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
+    // Whether or not worker is subscribed
     atomic<bool> subscribed = {false};
+    // Whether or not worker is authorized
     atomic<bool> authorized = {false};
+    // Total duration of session in minutes
     unsigned long duration()
     {
         return (chrono::duration_cast<chrono::minutes>(chrono::steady_clock::now() - start))
             .count();
     }
+
+    // EthereumStratum (1 and 2)
+
+    // Extranonce currently active
+    uint64_t extraNonce = 0;
+    // Length of extranonce in bytes
+    unsigned int extraNonceSizeBytes = 0;
+    // Next work target
+    h256 nextWorkBoundary =
+        h256("0x00000000ffff0000000000000000000000000000000000000000000000000000");
+
+    // EthereumStratum (2 only)
+    bool firstMiningSet = false;
+    unsigned int timeout = 30;  // Default to 30 seconds
+    string sessionId = "";
+    string workerId = "";
+    string algo = "ethash";
+    unsigned int epoch = 0;
+    chrono::steady_clock::time_point lastTxStamp = chrono::steady_clock::now();
+
 };
 
 class PoolClient
@@ -47,10 +71,9 @@ public:
 
     virtual void connect() = 0;
     virtual void disconnect() = 0;
-
-    virtual void submitHashrate(string const& rate, string const& id) = 0;
+    virtual void submitHashrate(uint64_t const& rate, string const& id) = 0;
     virtual void submitSolution(const Solution& solution) = 0;
-    virtual bool isConnected() { return (m_session ? true : false); }
+    virtual bool isConnected() { return m_connected.load(memory_order_relaxed); }
     virtual bool isPendingState() { return false; }
 
     virtual bool isSubscribed()
@@ -62,9 +85,12 @@ public:
         return (m_session ? m_session->authorized.load(memory_order_relaxed) : false);
     }
 
-    virtual string ActiveEndPoint() { return (m_session ? " [" + toString(m_endpoint) + "]" : ""); }
+    virtual string ActiveEndPoint()
+    {
+        return (m_connected.load(memory_order_relaxed) ? " [" + toString(m_endpoint) + "]" : "");
+    }
 
-    using SolutionAccepted = function<void(chrono::milliseconds const&, unsigned const&)>;
+    using SolutionAccepted = function<void(chrono::milliseconds const&, unsigned const&, bool)>;
     using SolutionRejected = function<void(chrono::milliseconds const&, unsigned const&)>;
     using Disconnected = function<void()>;
     using Connected = function<void()>;
@@ -78,6 +104,8 @@ public:
 
 protected:
     unique_ptr<Session> m_session = nullptr;
+
+    std::atomic<bool> m_connected = {false};  // This is related to socket ! Not session
 
     boost::asio::ip::basic_endpoint<boost::asio::ip::tcp> m_endpoint;
 

@@ -31,6 +31,9 @@
 #if ETH_ETHASHCUDA
 #include <libethash-cuda/CUDAMiner.h>
 #endif
+#if ETH_ETHASHCPU
+#include <libethash-cpu/CPUMiner.h>
+#endif
 #include <libpoolprotocols/PoolManager.h>
 
 #if API_CORE
@@ -229,6 +232,9 @@ public:
 #if ETH_ETHASHCUDA
                     "cu",
 #endif
+#if ETH_ETHASHCPU
+                    "cp",
+#endif
 #if API_CORE
                     "api",
 #endif
@@ -298,7 +304,7 @@ public:
 
 #endif
 
-#if ETH_ETHASHCL || ETH_ETHASHCUDA
+#if ETH_ETHASHCL || ETH_ETHASHCUDA || ETH_ETHASH_CPU
 
         app.add_flag("--list-devices", m_shouldListDevices, "");
 
@@ -314,6 +320,8 @@ public:
 
         app.add_flag("--cl-nobin", m_CLSettings.noBinary, "");
 
+        app.add_flag("--cl-noexit", m_CLSettings.noExit, "");
+
 #endif
 
 #if ETH_ETHASHCUDA
@@ -326,15 +334,18 @@ public:
         app.add_set(
             "--cuda-block-size,--cu-block-size", m_CUSettings.blockSize, {32, 64, 128, 256}, "", true);
 
-        app.add_set(
-            "--cuda-parallel-hash,--cu-parallel-hash", m_CUSettings.parallelHash, {1, 2, 4, 8}, "", true);
-
         string sched = "sync";
         app.add_set(
             "--cuda-schedule,--cu-schedule", sched, {"auto", "spin", "yield", "sync"}, "", true);
 
         app.add_option("--cuda-streams,--cu-streams", m_CUSettings.streams, "", true)
             ->check(CLI::Range(1, 99));
+
+#endif
+
+#if ETH_ETHASHCPU
+
+        app.add_option("--cpu-devices,--cp-devices", m_CPSettings.devices, "");
 
 #endif
 
@@ -348,6 +359,10 @@ public:
         bool cuda_miner = false;
         app.add_flag("-U,--cuda", cuda_miner, "");
 
+        bool cpu_miner = false;
+#if ETH_ETHASHCPU
+        app.add_flag("--cpu", cpu_miner, "");
+#endif
         auto sim_opt = app.add_option("-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
 
         app.add_option("--tstop", m_FarmSettings.tempStop, "", true)->check(CLI::Range(30, 100));
@@ -391,6 +406,8 @@ public:
             m_minerType = MinerType::CL;
         else if (cuda_miner)
             m_minerType = MinerType::CUDA;
+        else if (cpu_miner)
+            m_minerType = MinerType::CPU;
         else
             m_minerType = MinerType::Mixed;
 
@@ -495,6 +512,10 @@ public:
         if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
             CUDAMiner::enumDevices(m_DevicesCollection);
 #endif
+#if ETH_ETHASHCPU
+        if (m_minerType == MinerType::CPU)
+            CPUMiner::enumDevices(m_DevicesCollection);
+#endif
 
         // Can't proceed without any GPU
         if (!m_DevicesCollection.size())
@@ -506,7 +527,7 @@ public:
             cout << setw(4) << " Id ";
             cout << setiosflags(ios::left) << setw(10) << "Pci Id    ";
             cout << setw(5) << "Type ";
-            cout << setw(26) << "Name                      ";
+            cout << setw(30) << "Name                          ";
 
 #if ETH_ETHASHCUDA
             if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
@@ -535,7 +556,7 @@ public:
             cout << setw(4) << "--- ";
             cout << setiosflags(ios::left) << setw(10) << "--------- ";
             cout << setw(5) << "---- ";
-            cout << setw(26) << "------------------------- ";
+            cout << setw(30) << "----------------------------- ";
 
 #if ETH_ETHASHCUDA
             if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
@@ -581,7 +602,7 @@ public:
                 default:
                     break;
                 }
-                cout << setw(26) << (it->second.name).substr(0, 24);
+                cout << setw(30) << (it->second.name).substr(0, 28);
 #if ETH_ETHASHCUDA
                 if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
                 {
@@ -652,6 +673,21 @@ public:
             }
         }
 #endif
+#if ETH_ETHASHCPU
+        if (m_CPSettings.devices.size() && (m_minerType == MinerType::CPU))
+        {
+            for (auto index : m_CPSettings.devices)
+            {
+                if (index < m_DevicesCollection.size())
+                {
+                    auto it = m_DevicesCollection.begin();
+                    std::advance(it, index);
+                    it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cpu;
+                }
+            }
+        }
+#endif
+
 
         // Subscribe all detected devices
 #if ETH_ETHASHCUDA
@@ -680,7 +716,16 @@ public:
             }
         }
 #endif
-
+#if ETH_ETHASHCPU
+        if (!m_CPSettings.devices.size() &&
+            (m_minerType == MinerType::CPU))
+        {
+            for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
+            {
+                it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cpu;
+            }
+        }
+#endif
         // Count of subscribed devices
         int subscribedDevices = 0;
         for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
@@ -704,8 +749,8 @@ public:
         signal(SIGTERM, MinerCLI::signalHandler);
 
         // Initialize Farm
-        new Farm(m_DevicesCollection, m_FarmSettings, m_CUSettings, m_CLSettings);
-        
+        new Farm(m_DevicesCollection, m_FarmSettings, m_CUSettings, m_CLSettings, m_CPSettings);
+
         // Run Miner
         doMiner();
     }
@@ -725,6 +770,9 @@ public:
 #endif
 #if ETH_ETHASHCUDA
              << "    -U,--cuda           Mine/Benchmark using CUDA only" << endl
+#endif
+#if ETH_ETHASHCPU
+             << "    --cpu               Development ONLY ! (NO MINING)" << endl
 #endif
              << endl
              << "Connection options :" << endl
@@ -748,6 +796,9 @@ public:
 #if ETH_ETHASHCUDA
              << "cu,"
 #endif
+#if ETH_ETHASHCPU
+             << "cp,"
+#endif
 #if API_CORE
              << "api,"
 #endif
@@ -760,6 +811,9 @@ public:
 #endif
 #if ETH_ETHASHCUDA
              << "                        'cu'   Extended CUDA options" << endl
+#endif
+#if ETH_ETHASHCPU
+             << "                        'cp'   Extended CPU options" << endl
 #endif
 #if API_CORE
              << "                        'api'  API and Http monitoring interface" << endl
@@ -844,7 +898,8 @@ public:
                  << "                        Set the local work size multiplier" << endl
                  << "    --cl-nobin          FLAG" << endl
                  << "                        Use openCL kernel. Do not load binary kernel" << endl
-                 << endl;
+                 << "    --cl-noexit         FLAG" << endl
+                 << "                        Don't use fast exit algorithm" << endl;
         }
 
         if (ctx == "cu")
@@ -852,8 +907,7 @@ public:
             cout << "CUDA Extended Options :" << endl
                  << endl
                  << "    Use this extended CUDA arguments to fine tune the performance." << endl
-                 << "    Be advised default values are best generic findings by developers	"
-                 << endl
+                 << "    Be advised default values are best generic findings by developers" << endl
                  << endl
                  << "    --cu-grid-size      INT [1 .. 131072] Default = 8192" << endl
                  << "                        Set the grid size" << endl
@@ -894,6 +948,20 @@ public:
                     "results"
                  << endl
                  << "                                from the device" << endl
+                 << endl;
+        }
+
+        if (ctx == "cp")
+        {
+            cout << "CPU Extended Options :" << endl
+                 << endl
+                 << "    Use this extended CPU arguments"
+                 << endl
+                 << endl
+                 << "    --cp-devices        UINT {} Default not set" << endl
+                 << "                        Space separated list of device indexes to use" << endl
+                 << "                        eg --cp-devices 0 2 3" << endl
+                 << "                        If not set all available CPUs will be used" << endl
                  << endl;
         }
 
@@ -1121,7 +1189,8 @@ public:
                  << endl
                  << "        stratum     Stratum" << endl
                  << "        stratum1    Eth Proxy compatible" << endl
-                 << "        stratum2    EthereumStratum 1.0.0. (nicehash)" << endl
+                 << "        stratum2    EthereumStratum 1.0.0 (nicehash)" << endl
+                 << "        stratum3    EthereumStratum 2.0.0" << endl
                  << endl
                  << "    Transport variants :" << endl
                  << endl
@@ -1196,10 +1265,11 @@ private:
     PoolSettings m_PoolSettings;  // Operating settings for PoolManager
     CLSettings m_CLSettings;          // Operating settings for CL Miners
     CUSettings m_CUSettings;          // Operating settings for CUDA Miners
+    CPSettings m_CPSettings;          // Operating settings for CPU Miners
 
     //// -- Pool manager related params
     //std::vector<std::shared_ptr<URI>> m_poolConns;
-    
+
 
     // -- CLI Interface related params
     unsigned m_cliDisplayInterval =

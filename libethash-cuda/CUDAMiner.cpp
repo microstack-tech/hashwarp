@@ -233,7 +233,7 @@ void CUDAMiner::kick_miner()
     m_new_work_signal.notify_one();
 }
 
-unsigned CUDAMiner::getNumDevices()
+int CUDAMiner::getNumDevices()
 {
     int deviceCount;
     cudaError_t err = cudaGetDeviceCount(&deviceCount);
@@ -261,46 +261,44 @@ unsigned CUDAMiner::getNumDevices()
 void CUDAMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection)
 {
     int numDevices = getNumDevices();
-    if (numDevices)
+
+    for (int i = 0; i < numDevices; i++)
     {
-        for (int i = 0; i < numDevices; i++)
+        string uniqueId;
+        ostringstream s;
+        DeviceDescriptor deviceDescriptor;
+        cudaDeviceProp props;
+
+        try
         {
-            string uniqueId;
-            ostringstream s;
-            DeviceDescriptor deviceDescriptor;
-            cudaDeviceProp props;
+            CUDA_SAFE_CALL(cudaGetDeviceProperties(&props, i));
+            s << setw(2) << setfill('0') << hex << props.pciBusID << ":" << setw(2)
+              << props.pciDeviceID << ".0";
+            uniqueId = s.str();
 
-            try
-            {
-                CUDA_SAFE_CALL(cudaGetDeviceProperties(&props, i));
-                s << setw(2) << setfill('0') << hex << props.pciBusID << ":" << setw(2)
-                  << props.pciDeviceID << ".0";
-                uniqueId = s.str();
+            if (_DevicesCollection.find(uniqueId) != _DevicesCollection.end())
+                deviceDescriptor = _DevicesCollection[uniqueId];
+            else
+                deviceDescriptor = DeviceDescriptor();
 
-                if (_DevicesCollection.find(uniqueId) != _DevicesCollection.end())
-                    deviceDescriptor = _DevicesCollection[uniqueId];
-                else
-                    deviceDescriptor = DeviceDescriptor();
+            deviceDescriptor.name = string(props.name);
+            deviceDescriptor.cuDetected = true;
+            deviceDescriptor.uniqueId = uniqueId;
+            deviceDescriptor.type = DeviceTypeEnum::Gpu;
+            deviceDescriptor.cuDeviceIndex = i;
+            deviceDescriptor.cuDeviceOrdinal = i;
+            deviceDescriptor.cuName = string(props.name);
+            deviceDescriptor.totalMemory = props.totalGlobalMem;
+            deviceDescriptor.cuCompute =
+                (to_string(props.major) + "." + to_string(props.minor));
+            deviceDescriptor.cuComputeMajor = props.major;
+            deviceDescriptor.cuComputeMinor = props.minor;
 
-                deviceDescriptor.name = string(props.name);
-                deviceDescriptor.cuDetected = true;
-                deviceDescriptor.uniqueId = uniqueId;
-                deviceDescriptor.type = DeviceTypeEnum::Gpu;
-                deviceDescriptor.cuDeviceIndex = i;
-                deviceDescriptor.cuDeviceOrdinal = i;
-                deviceDescriptor.cuName = string(props.name);
-                deviceDescriptor.totalMemory = props.totalGlobalMem;
-                deviceDescriptor.cuCompute =
-                    (to_string(props.major) + "." + to_string(props.minor));
-                deviceDescriptor.cuComputeMajor = props.major;
-                deviceDescriptor.cuComputeMinor = props.minor;
-
-                _DevicesCollection[uniqueId] = deviceDescriptor;
-            }
-            catch (const cuda_runtime_error& _e)
-            {
-                std::cerr << _e.what() << std::endl;
-            }
+            _DevicesCollection[uniqueId] = deviceDescriptor;
+        }
+        catch (const cuda_runtime_error& _e)
+        {
+            std::cerr << _e.what() << std::endl;
         }
     }
 }
@@ -325,7 +323,7 @@ void CUDAMiner::search(
         buffer.count = 0;
 
         // Run the batch for this stream
-        run_ethash_search(m_settings.gridSize, m_settings.blockSize, stream, &buffer, start_nonce, m_settings.parallelHash);
+        run_ethash_search(m_settings.gridSize, m_settings.blockSize, stream, &buffer, start_nonce);
     }
 
     // process stream batches until we get new work.
@@ -364,25 +362,21 @@ void CUDAMiner::search(
             volatile Search_results& buffer(*m_search_buf[current_index]);
             uint32_t found_count = std::min((unsigned)buffer.count, MAX_SEARCH_RESULTS);
 
+            uint32_t gids[MAX_SEARCH_RESULTS];
+            h256 mixes[MAX_SEARCH_RESULTS];
+
             if (found_count)
             {
                 buffer.count = 0;
-                uint64_t nonce_base = start_nonce - m_streams_batch_size;
 
                 // Extract solution and pass to higer level
                 // using io_service as dispatcher
 
                 for (uint32_t i = 0; i < found_count; i++)
                 {
-                    h256 mix;
-                    uint64_t nonce = nonce_base + buffer.result[i].gid;
-                    memcpy(mix.data(), (void*)&buffer.result[i].mix, sizeof(buffer.result[i].mix));
-                    auto sol = Solution{nonce, mix, w, std::chrono::steady_clock::now(), m_index};
-
-                    cudalog << EthWhite << "Job: " << w.header.abridged() << " Sol: "
-                            << toHex(sol.nonce, HexPrefix::Add) << EthReset;
-
-                    Farm::f().submitProof(sol);
+                    gids[i] = buffer.result[i].gid;
+                    memcpy(mixes[i].data(), (void*)&buffer.result[i].mix,
+                        sizeof(buffer.result[i].mix));
                 }
             }
 
@@ -390,7 +384,21 @@ void CUDAMiner::search(
             // unless we are done for this round.
             if (!done)
                 run_ethash_search(
-                    m_settings.gridSize, m_settings.blockSize, stream, &buffer, start_nonce, m_settings.parallelHash);
+                    m_settings.gridSize, m_settings.blockSize, stream, &buffer, start_nonce);
+
+            if (found_count)
+            {
+                uint64_t nonce_base = start_nonce - m_streams_batch_size;
+                for (uint32_t i = 0; i < found_count; i++)
+                {
+                    uint64_t nonce = nonce_base + gids[i];
+
+                    Farm::f().submitProof(
+                        Solution{nonce, mixes[i], w, std::chrono::steady_clock::now(), m_index});
+                    cudalog << EthWhite << "Job: " << w.header.abridged() << " Sol: 0x"
+                            << toHex(nonce) << EthReset;
+                }
+            }
         }
 
         // Update the hash rate

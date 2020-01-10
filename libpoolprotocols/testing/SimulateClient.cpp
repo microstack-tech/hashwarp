@@ -18,6 +18,7 @@ SimulateClient::~SimulateClient() = default;
 void SimulateClient::connect()
 {
     // Initialize new session
+    m_connected.store(true, memory_order_relaxed);
     m_session = unique_ptr<Session>(new Session);
     m_session->subscribed.store(true, memory_order_relaxed);
     m_session->authorized.store(true, memory_order_relaxed);
@@ -38,12 +39,13 @@ void SimulateClient::disconnect()
     
     m_conn->addDuration(m_session->duration());
     m_session = nullptr;
+    m_connected.store(false, memory_order_relaxed);
 
     if (m_onDisconnected)
         m_onDisconnected();
 }
 
-void SimulateClient::submitHashrate(string const& rate, string const& id)
+void SimulateClient::submitHashrate(uint64_t const& rate, string const& id)
 {
     (void)rate;
     (void)id;
@@ -63,7 +65,7 @@ void SimulateClient::submitSolution(const Solution& solution)
     if (accepted)
     {
         if (m_onSolutionAccepted)
-            m_onSolutionAccepted(response_delay_ms, solution.midx);
+            m_onSolutionAccepted(response_delay_ms, solution.midx, false);
     }
     else
     {

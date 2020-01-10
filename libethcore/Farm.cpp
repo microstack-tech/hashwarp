@@ -26,6 +26,10 @@
 #include <libethash-cuda/CUDAMiner.h>
 #endif
 
+#if ETH_ETHASHCPU
+#include <libethash-cpu/CPUMiner.h>
+#endif
+
 namespace dev
 {
 namespace eth
@@ -33,10 +37,11 @@ namespace eth
 Farm* Farm::m_this = nullptr;
 
 Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection,
-    FarmSettings _settings, CUSettings _CUSettings, CLSettings _CLSettings)
+    FarmSettings _settings, CUSettings _CUSettings, CLSettings _CLSettings, CPSettings _CPSettings)
   : m_Settings(std::move(_settings)),
     m_CUSettings(std::move(_CUSettings)),
     m_CLSettings(std::move(_CLSettings)),
+    m_CPSettings(std::move(_CPSettings)),
     m_io_strand(g_io_service),
     m_collectTimer(g_io_service),
     m_DevicesCollection(_DevicesCollection)
@@ -274,6 +279,15 @@ bool Farm::start()
                     new CLMiner(m_miners.size(), m_CLSettings, it->second)));
             }
 #endif
+#if ETH_ETHASHCPU
+
+            if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cpu)
+            {
+                minerTelemetry.prefix = "cp";
+                m_miners.push_back(std::shared_ptr<Miner>(
+                    new CPUMiner(m_miners.size(), m_CPSettings, it->second)));
+            }
+#endif
             if (minerTelemetry.prefix.empty())
                 continue;
             m_telemetry.miners.push_back(minerTelemetry);
@@ -486,9 +500,10 @@ void Farm::submitProofAsync(Solution const& _s)
                   << " gave incorrect result. Lower overclocking values if it happens frequently.";
             return;
         }
+        m_onSolutionFound(Solution{_s.nonce, r.mixHash, _s.work, _s.tstamp, _s.midx});
     }
-
-    m_onSolutionFound(_s);
+    else
+        m_onSolutionFound(_s);
 
 #ifdef DEV_BUILD
     if (g_logOptions & LOG_SUBMIT)

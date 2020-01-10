@@ -51,21 +51,25 @@ enum class DeviceSubscriptionTypeEnum
 {
     None,
     OpenCL,
-    Cuda
+    Cuda,
+    Cpu
+
 };
 
 enum class MinerType
 {
     Mixed,
     CL,
-    CUDA
+    CUDA,
+    CPU
 };
 
 enum class HwMonitorInfoType
 {
     UNKNOWN,
     NVIDIA,
-    AMD
+    AMD,
+    CPU
 };
 
 enum class ClPlatformTypeEnum
@@ -84,25 +88,33 @@ enum class SolutionAccountingEnum
     Failed
 };
 
-// Holds settings for CUDA Miner
-struct CUSettings
+struct MinerSettings
 {
     vector<unsigned> devices;
+};
+
+// Holds settings for CUDA Miner
+struct CUSettings : public MinerSettings
+{
     unsigned streams = 2;
     unsigned schedule = 4;
     unsigned gridSize = 8192;
     unsigned blockSize = 128;
-    unsigned parallelHash = 4;
 };
 
 // Holds settings for OpenCL Miner
-struct CLSettings
+struct CLSettings : public MinerSettings
 {
-    vector<unsigned> devices;
     bool noBinary = false;
+    bool noExit = false;
     unsigned globalWorkSize = 0;
     unsigned globalWorkSizeMultiplier = 65536;
     unsigned localWorkSize = 128;
+};
+
+// Holds settings for CPU Miner
+struct CPSettings : public MinerSettings
+{
 };
 
 struct SolutionAccountType
@@ -185,6 +197,8 @@ struct DeviceDescriptor
     string cuCompute;
     unsigned int cuComputeMajor;
     unsigned int cuComputeMinor;
+
+    int cpCpuNumer;   // For CPU
 };
 
 struct HwMonitorInfo
@@ -263,7 +277,7 @@ struct TelemetryType
         }
 
         _ret << EthTealBold << std::fixed << std::setprecision(2) << hr << " "
-             << suffixes[magnitude] << EthReset << " { ";
+             << suffixes[magnitude] << EthReset << " - ";
 
         int i = -1;                 // Current miner index
         int m = miners.size() - 1;  // Max miner index
@@ -286,9 +300,8 @@ struct TelemetryType
 
             // Separator if not the last miner index
             if (i < m)
-                _ret << " | ";
+                _ret << ", ";
         }
-        _ret << " }";
 
         return _ret.str();
     };
@@ -329,7 +342,6 @@ private:
  * @brief A miner - a member and adoptee of the Farm.
  * @warning Not threadsafe. It is assumed Farm will synchronise calls to/from this class.
  */
-#define MAX_MINERS 32U
 
 class Miner : public Worker
 {

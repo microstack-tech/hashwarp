@@ -76,6 +76,7 @@ void EthGetworkClient::connect()
 void EthGetworkClient::disconnect()
 {
     // Release session
+    m_connected.store(false, memory_order_relaxed);
     m_conn->addDuration(m_session->duration());
     m_session = nullptr;
 
@@ -117,6 +118,7 @@ void EthGetworkClient::handle_connect(const boost::system::error_code& ec)
         if (m_connecting.load(std::memory_order_relaxed))
         {
             // Initialize new session
+            m_connected.store(true, memory_order_relaxed);
             m_session = unique_ptr<Session>(new Session);
             m_session->subscribed.store(true, memory_order_relaxed);
             m_session->authorized.store(true, memory_order_relaxed);
@@ -454,7 +456,7 @@ void EthGetworkClient::processResponse(Json::Value& JRes)
         if (_isSuccess)
         {
             if (m_onSolutionAccepted)
-                m_onSolutionAccepted(_delay, miner_index);
+                m_onSolutionAccepted(_delay, miner_index, false);
         }
         else
         {
@@ -516,7 +518,7 @@ void EthGetworkClient::send(std::string const& sReq)
         begin_connect();
 }
 
-void EthGetworkClient::submitHashrate(string const& rate, string const& id)
+void EthGetworkClient::submitHashrate(uint64_t const& rate, string const& id)
 {
     // No need to check for authorization
     if (m_session)
@@ -526,8 +528,8 @@ void EthGetworkClient::submitHashrate(string const& rate, string const& id)
         jReq["jsonrpc"] = "2.0";
         jReq["method"] = "eth_submitHashrate";
         jReq["params"] = Json::Value(Json::arrayValue);
-        jReq["params"].append(rate);  // Already expressed as hex
-        jReq["params"].append(id);    // Already prefixed by 0x
+        jReq["params"].append(toHex(rate, HexPrefix::Add));  // Already expressed as hex
+        jReq["params"].append(id);                           // Already prefixed by 0x
         send(jReq);
     }
 
@@ -543,6 +545,7 @@ void EthGetworkClient::submitSolution(const Solution& solution)
 
         unsigned id = 40 + solution.midx;
         jReq["id"] = id;
+        jReq["jsonrpc"] = "2.0";
         m_solution_submitted_max_id = max(m_solution_submitted_max_id, id);
         jReq["method"] = "eth_submitWork";
         jReq["params"] = Json::Value(Json::arrayValue);

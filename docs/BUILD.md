@@ -27,8 +27,17 @@ This project uses [CMake] and [Hunter] package manager.
 
 ### Linux
 
-1. GCC version >= 4.8
-2. DBUS development libs if building with `-DETHDBUS`. E.g. on Ubuntu run:
+1. GCC version >= 4.8, tested on GCC compiler 7.5.0
+2. CMake version 3.21.5
+``` shell
+wget https://github.com/Kitware/CMake/releases/download/v3.21.5/cmake-3.21.5.tar.gz
+tar -zxvf cmake-3.21.5.tar.gz
+cd cmake-3.21.5
+./bootstrap
+make
+sudo make install
+```
+3. DBUS development libs if building with `-DETHDBUS`. E.g. on Ubuntu run:
 
 ```shell
 sudo apt install libdbus-1-dev
@@ -42,6 +51,8 @@ you have to install the OpenGL libraries. E.g. on Ubuntu run:
 ```shell
 sudo apt-get install mesa-common-dev
 ```
+
+If you want to use locally installed [ROCm-OpenCL](https://rocmdocs.amd.com/en/latest/) package, use build flag `-DUSE_SYS_OPENCL=ON` with cmake config.
 
 ### macOS
 
@@ -91,8 +102,12 @@ sudo apt-get install mesa-common-dev
     ```shell
     cmake --build . --config Release
     ```
-
-5. _(Optional, Linux only)_ Install the built executable:
+5. Generate the executable
+    ```shell
+    make all
+    ```
+    will find the executable in **ethminer/ethminer** in the **build** directory
+6. _(Optional, Linux only)_ Install the built executable:
 
     ```shell
     sudo make install
@@ -143,6 +158,7 @@ cmake .. -DETHASHCUDA=ON -DETHASHCL=OFF
 * `-DAPICORE=ON` - enable API Server, `ON` by default.
 * `-DBINKERN=ON` - install AMD binary kernels, `ON` by default.
 * `-DETHDBUS=ON` - enable D-Bus support, `OFF` by default.
+* `-DUSE_SYS_OPENCL=ON` - Use system OpenCL, `OFF` by default, unless on macOS. Specify to use local **ROCm-OpenCL** package.
 
 ## Disable Hunter
 

@@ -67,7 +67,7 @@ The above samples produce the very same result.
 -P stratum://account%%2e1234.Worker:password@eu1.ethermine.org:4444
 ```  
 
-## Secure socket comunications for stratum only
+## Secure socket communications for stratum only
 
 Ethminer supports secure socket communications (where pool implements and offers it) to avoid the risk of a [man-in-the-middle attack](https://en.wikipedia.org/wiki/Man-in-the-middle_attack)
 To enable it simply replace tcp with either:
@@ -104,7 +104,7 @@ Here you can find a collection of samples to connect to most commonly used ethas
 * Stratum connection is **always to be preferred** over **getwork** when pool offers it due to its better network latency.
 * If possible the samples use a protocol which supports reporting of hashrate (`--report-hashrate`) if pool supports this.
 
-**Check for updates in the pool connection settings visiting the pools homepage.**
+**Check for updates in the pool connection settings visiting the pool's homepage.**
 
 ## Variables
 
@@ -132,6 +132,7 @@ The servers are listed in alphabetical order. To get best results reorder them f
 | [ethermine.org](#ethermineorg) | <https://ethermine.org/> | <https://ethermine.org/> |
 | [ethpool.org](#ethpoolorg) | <https://www.ethpool.org/> | <https://www.ethpool.org/> |
 | [f2pool.com](#f2poolcom) | <https://www.f2pool.com/> | <https://www.f2pool.com/help/?#tab-content-eth> |
+| [flexpool.io](#flexpoolio) | <https://flexpool.io/> | <https://flexpool.io/docs/getting-started/> |
 | [miningpoolhub.com](#miningpoolhubcom) | <https://miningpoolhub.com/> | <https://ethereum.miningpoolhub.com/> |
 | [nanopool.org](#nanopoolorg) | <https://nanopool.org/> | <https://eth.nanopool.org/help> |
 | [nicehash.com](#nicehashcom) | <https://www.nicehash.com/> | <https://www.nicehash.com/help/which-stratum-servers-are-available> |
@@ -220,6 +221,22 @@ SSL connection:
 -P stratum1+tcp://ETH_WALLET.WORKERNAME@eth.f2pool.com:8008
 ```
 
+### flexpool.io
+
+Non-SSL connection:
+
+```
+-P stratum1+tcp://ETH_WALLET.WORKERNAME@eu.flexpool.io:4444
+-P stratum1+tcp://ETH_WALLET.WORKERNAME@us.flexpool.io:4444
+```
+
+SSL connection:
+
+```
+-P stratum1+ssl://ETH_WALLET.WORKERNAME@eu.flexpool.io:5555
+-P stratum1+ssl://ETH_WALLET.WORKERNAME@us.flexpool.io:5555
+```
+
 ### miningpoolhub.com
 
 ```
@@ -234,6 +251,11 @@ HINTS:
 * It seems the password is not being verified by the pool so you can use a plain `x` as `WORKERPWD`.
 
 ### nanopool.org
+
+Notice ⚠
+
+* Use "%40" for the @-sign in your email address
+* Use "\%2e" for the .-sign on Linux in ETH_WALLET.WORKERNAME
 
 With email:
 
@@ -255,9 +277,6 @@ Without email:
 -P stratum1+tcp://ETH_WALLET.WORKERNAME@eth-us-west1.nanopool.org:9999
 ```
 
-HINTS:
-
-* Use "%40" for the @-sign in your email address
 
 ### nicehash.com
 

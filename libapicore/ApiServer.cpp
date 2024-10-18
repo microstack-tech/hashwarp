@@ -268,8 +268,8 @@ void ApiServer::start()
 
     cnote << "Api server listening on port " + to_string(m_acceptor.local_endpoint().port())
           << (m_password.empty() ? "." : ". Authentication needed.");
-    m_workThread = std::thread{boost::bind(&ApiServer::begin_accept, this)};
     m_running.store(true, std::memory_order_relaxed);
+    m_workThread = std::thread{boost::bind(&ApiServer::begin_accept, this)};
 }
 
 void ApiServer::stop()
@@ -1169,10 +1169,17 @@ std::string ApiConnection::getHttpMinerStatDetail()
 
         _ret << "<td class=right>" << dev::getFormattedHashes(hashrate) << "</td>";
 
-        _ret << "<td class=right>" << device["mining"]["shares"][0].asString() << "</td>";
+        
+        string solString = "A" + device["mining"]["shares"][0].asString() + 
+                           ":R" + device["mining"]["shares"][1].asString() +
+                           ":F" + device["mining"]["shares"][2].asString();
+        _ret << "<td class=right>" << solString << "</td>";
         _ret << "<td class=right>" << device["hardware"]["sensors"][0].asString() << "</td>";
         _ret << "<td class=right>" << device["hardware"]["sensors"][1].asString() << "</td>";
-        _ret << "<td class=right>" << device["hardware"]["sensors"][2].asString() << "</td>";
+
+        stringstream powerStream; // Round the power to 2 decimal places to remove floating point garbage
+        powerStream << fixed << setprecision(2) << device["hardware"]["sensors"][2].asDouble();
+        _ret << "<td class=right>" << powerStream.str() << "</td>";
 
         _ret << "</tr>";  // Close row
     }

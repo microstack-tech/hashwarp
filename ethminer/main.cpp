@@ -112,7 +112,7 @@ public:
             minelog << logLine;
 
 #if ETH_DBUS
-            dbusint.send(Farm::f().Telemetry().str());
+            dbusint.send(Farm::f().Telemetry().str().c_str());
 #endif
             // Resubmit timer
             m_cliDisplayTimer.expires_from_now(boost::posix_time::seconds(m_cliDisplayInterval));
@@ -254,6 +254,9 @@ public:
 
         app.add_option("--farm-retries", m_PoolSettings.connectionMaxRetries, "", true)->check(CLI::Range(0, 99999));
 
+        app.add_option("--retry-delay", m_PoolSettings.delayBeforeRetry, "", true)
+            ->check(CLI::Range(1, 999));
+        
         app.add_option("--work-timeout", m_PoolSettings.noWorkTimeout, "", true)
             ->check(CLI::Range(180, 99999));
 
@@ -982,6 +985,8 @@ public:
                  << "    --farm-retries      INT[1 .. 99999] Default = 3" << endl
                  << "                        Set number of reconnection retries to same pool"
                  << endl
+                 << "    --retry-delay       INT[1 .. 999] Default = 0" << endl
+                 << "                        Delay in seconds before reconnection retry" << endl
                  << "    --failover-timeout  INT[0 .. ] Default not set" << endl
                  << "                        Sets the number of minutes ubqminer can stay" << endl
                  << "                        connected to a fail-over pool before trying to" << endl

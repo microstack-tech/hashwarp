@@ -382,7 +382,7 @@ void Farm::restart()
  */
 void Farm::restart_async()
 {
-    m_io_strand.get_io_service().post(m_io_strand.wrap(boost::bind(&Farm::restart, this)));
+    boost::asio::post(m_io_strand, boost::bind(&Farm::restart, this));
 }
 
 /**

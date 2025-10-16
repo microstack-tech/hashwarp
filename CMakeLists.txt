@@ -21,7 +21,7 @@ HunterGate(
     LOCAL
 )
 
-project(ethminer)
+project(hashwarp)
 set(PROJECT_VERSION 0.20.1)
 
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release RelWithDebInfo)
@@ -104,7 +104,7 @@ endif()
 cable_add_buildinfo_library(PROJECT_NAME ${PROJECT_NAME})
 
 add_subdirectory(libdevcore)
-add_subdirectory(libethcore)
+add_subdirectory(libparallaxcore)
 add_subdirectory(libhwmon)
 add_subdirectory(libpoolprotocols)
 
@@ -124,7 +124,7 @@ if (APICORE)
   add_subdirectory(libapicore)
 endif()
 
-add_subdirectory(ethminer)
+add_subdirectory(hashwarp)
 
 
 if(WIN32)

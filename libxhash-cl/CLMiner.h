@@ -8,8 +8,8 @@
 #include <fstream>
 
 #include <libdevcore/Worker.h>
-#include <libethcore/XHashAux.h>
-#include <libethcore/Miner.h>
+#include <libparallaxcore/XHashAux.h>
+#include <libparallaxcore/Miner.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/lexical_cast.hpp>

@@ -16,7 +16,7 @@
  */
 
 
-#include <libethcore/Farm.h>
+#include <libparallaxcore/Farm.h>
 
 #if ETH_XHASHCL
 #include <libxhash-cl/CLMiner.h>

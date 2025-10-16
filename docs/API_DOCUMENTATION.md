@@ -26,7 +26,7 @@
 
 Ethminer implements an API (Application Programming Interface) interface which allows to monitor/control some of the run-time values endorsed by this miner. The API interface is available under the following circumstances:
 
-* If you're using a binary release downloaded from the [releases](https://github.com/ethereum-mining/ethminer/releases) section of this repository
+* If you're using a binary release downloaded from the [releases](https://github.com/microstack-tech/hashwarp/releases) section of this repository
 * If you build the application from source ensuring you add the compilation switch `-D APICORE=ON`
 
 ## Activation and Security

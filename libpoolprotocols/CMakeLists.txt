@@ -11,5 +11,5 @@ hunter_add_package(OpenSSL)
 find_package(OpenSSL REQUIRED)
 
 add_library(poolprotocols ${SOURCES})
-target_link_libraries(poolprotocols PRIVATE devcore ethminer-buildinfo xhash::xhash Boost::system jsoncpp_static OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(poolprotocols PRIVATE devcore hashwarp-buildinfo xhash::xhash Boost::system jsoncpp_static OpenSSL::SSL OpenSSL::Crypto)
 target_include_directories(poolprotocols PRIVATE ..)

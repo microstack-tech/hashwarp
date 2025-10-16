@@ -3,9 +3,9 @@
 #include <iostream>
 
 #include <libdevcore/Worker.h>
-#include <libethcore/XHashAux.h>
-#include <libethcore/Farm.h>
-#include <libethcore/Miner.h>
+#include <libparallaxcore/XHashAux.h>
+#include <libparallaxcore/Farm.h>
+#include <libparallaxcore/Miner.h>
 
 #include "../PoolClient.h"
 

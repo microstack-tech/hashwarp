@@ -1,8 +1,8 @@
 #include "ApiServer.h"
 
-#include <ethminer/buildinfo.h>
+#include <hashwarp/buildinfo.h>
 
-#include <libethcore/Farm.h>
+#include <libparallaxcore/Farm.h>
 
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 255
@@ -795,7 +795,7 @@ void ApiConnection::onRecvSocketDataCompleted(
                 std::stringstream ss;
                 ss << http_ver << " "
                    << "405 Method not allowed\r\n"
-                   << "Server: " << ethminer_get_buildinfo()->project_name_with_version << "\r\n"
+                   << "Server: " << hashwarp_get_buildinfo()->project_name_with_version << "\r\n"
                    << "Content-Type: text/plain\r\n"
                    << "Content-Length: " << what.size() << "\r\n\r\n"
                    << what << "\r\n";
@@ -812,7 +812,7 @@ void ApiConnection::onRecvSocketDataCompleted(
                 std::stringstream ss;
                 ss << http_ver << " "
                    << "404 Not Found\r\n"
-                   << "Server: " << ethminer_get_buildinfo()->project_name_with_version << "\r\n"
+                   << "Server: " << hashwarp_get_buildinfo()->project_name_with_version << "\r\n"
                    << "Content-Type: text/plain\r\n"
                    << "Content-Length: " << what.size() << "\r\n\r\n"
                    << what << "\r\n";
@@ -838,7 +838,7 @@ void ApiConnection::onRecvSocketDataCompleted(
                     ss.clear();
                     ss << http_ver << " "
                        << "200 Ok Error\r\n"
-                       << "Server: " << ethminer_get_buildinfo()->project_name_with_version
+                       << "Server: " << hashwarp_get_buildinfo()->project_name_with_version
                        << "\r\n"
                        << "Content-Type: text/html; charset=utf-8\r\n"
                        << "Content-Length: " << body.size() << "\r\n\r\n"
@@ -850,7 +850,7 @@ void ApiConnection::onRecvSocketDataCompleted(
                     ss.clear();
                     ss << http_ver << " "
                        << "500 Internal Server Error\r\n"
-                       << "Server: " << ethminer_get_buildinfo()->project_name_with_version
+                       << "Server: " << hashwarp_get_buildinfo()->project_name_with_version
                        << "\r\n"
                        << "Content-Type: text/plain\r\n"
                        << "Content-Length: " << what.size() << "\r\n\r\n"
@@ -1001,7 +1001,7 @@ Json::Value ApiConnection::getMinerStat1()
 
     Json::Value jRes;
 
-    jRes[0] = ethminer_get_buildinfo()->project_name_with_version;  // miner version.
+    jRes[0] = hashwarp_get_buildinfo()->project_name_with_version;  // miner version.
     jRes[1] = toString(runningTime.count());                        // running time, in minutes.
     jRes[2] = totalMhEth.str();  // total ETH hashrate in MH/s, number of ETH shares, number of ETH
                                  // rejected shares.
@@ -1217,7 +1217,7 @@ Json::Value ApiConnection::getMinerStatDetail()
 
     /* Host Info */
     Json::Value hostinfo;
-    hostinfo["version"] = ethminer_get_buildinfo()->project_name_with_version;  // miner version.
+    hostinfo["version"] = hashwarp_get_buildinfo()->project_name_with_version;  // miner version.
     hostinfo["runtime"] = uint64_t(runningTime.count());  // running time, in seconds.
 
     {

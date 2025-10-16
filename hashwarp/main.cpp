@@ -17,14 +17,14 @@
 
 #include <CLI/CLI.hpp>
 
-#include <ethminer/buildinfo.h>
+#include <hashwarp/buildinfo.h>
 #include <condition_variable>
 
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 #endif
 
-#include <libethcore/Farm.h>
+#include <libparallaxcore/Farm.h>
 #if ETH_XHASHCL
 #include <libxhash-cl/CLMiner.h>
 #endif
@@ -54,7 +54,7 @@ using namespace dev::eth;
 
 // Global vars
 bool g_running = false;
-bool g_exitOnError = false;  // Whether or not ethminer should exit on mining threads errors
+bool g_exitOnError = false;  // Whether or not hashwarp should exit on mining threads errors
 
 condition_variable g_shouldstop;
 boost::asio::io_service g_io_service;  // The IO service itself
@@ -68,7 +68,7 @@ struct MiningChannel : public LogChannel
 #define minelog clog(MiningChannel)
 
 #if ETH_DBUS
-#include <ethminer/DBusInt.h>
+#include <hashwarp/DBusInt.h>
 #endif
 
 class MinerCLI
@@ -215,7 +215,7 @@ public:
     {
         std::queue<string> warnings;
 
-        CLI::App app("Ubqminer - GPU Ubqhash miner");
+        CLI::App app("Hashwarp - Parallax GPU miner");
 
         bool bhelp = false;
         string shelpExt;
@@ -760,12 +760,12 @@ public:
 
     void help()
     {
-        cout << "Ubqminer - GPU ubqhash miner" << endl
-             << "minimal usage : ubqminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
+        cout << "Hashwarp - Parallax GPU miner" << endl
+             << "minimal usage : hashwarp [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
              << endl
              << "Devices type options :" << endl
              << endl
-             << "    By default ubqminer will try to use all devices types" << endl
+             << "    By default hashwarp will try to use all devices types" << endl
              << "    it can detect. Optionally you can limit this behavior" << endl
              << "    setting either of the following options" << endl
 #if ETH_XHASHCL
@@ -786,7 +786,7 @@ public:
              << endl
              << "                        For an explication and some samples about" << endl
              << "                        how to fill in this value please use" << endl
-             << "                        ubqminer --help-ext con" << endl
+             << "                        hashwarp --help-ext con" << endl
              << endl
 
              << "Common Options :" << endl
@@ -854,7 +854,7 @@ public:
         {
             cout << "API Interface Options :" << endl
                  << endl
-                 << "    Ubqminer provide an interface for monitor and or control" << endl
+                 << "    Hashwarp provide an interface for monitor and or control" << endl
                  << "    Please note that information delivered by API interface" << endl
                  << "    may depend on value of --HWMON" << endl
                  << "    A single endpoint is used to accept both HTTP or plain tcp" << endl
@@ -988,7 +988,7 @@ public:
                  << "    --retry-delay       INT[1 .. 999] Default = 0" << endl
                  << "                        Delay in seconds before reconnection retry" << endl
                  << "    --failover-timeout  INT[0 .. ] Default not set" << endl
-                 << "                        Sets the number of minutes ubqminer can stay" << endl
+                 << "                        Sets the number of minutes hashwarp can stay" << endl
                  << "                        connected to a fail-over pool before trying to" << endl
                  << "                        reconnect to the primary (the first) connection."
                  << endl
@@ -1007,10 +1007,10 @@ public:
                  << "                        0 No monitoring" << endl
                  << "                        1 Monitor temperature and fan percentage" << endl
                  << "                        2 As 1 plus monitor power drain" << endl
-                 << "    --exit              FLAG Stop ubqminer whenever an error is encountered"
+                 << "    --exit              FLAG Stop hashwarp whenever an error is encountered"
                  << endl
                  << "    --ergodicity        INT[0 .. 2] Default = 0" << endl
-                 << "                        Sets how ubqminer chooses the nonces segments to"
+                 << "                        Sets how hashwarp chooses the nonces segments to"
                  << endl
                  << "                        search on." << endl
                  << "                        0 A search segment is picked at startup" << endl
@@ -1170,16 +1170,16 @@ public:
                  << "    You can add as many -P arguments as you want. Every -P specification"
                  << endl
                  << "    after the first one behaves as fail-over connection. When also the" << endl
-                 << "    the fail-over disconnects ubqminer passes to the next connection" << endl
+                 << "    the fail-over disconnects hashwarp passes to the next connection" << endl
                  << "    available and so on till the list is exhausted. At that moment" << endl
-                 << "    ubqminer restarts the connection cycle from the first one." << endl
+                 << "    hashwarp restarts the connection cycle from the first one." << endl
                  << "    An exception to this behavior is ruled by the --failover-timeout" << endl
-                 << "    command line argument. See 'ubqminer -H misc' for details." << endl
+                 << "    command line argument. See 'hashwarp -H misc' for details." << endl
                  << endl
                  << "    The special notation '-P exit' stops the failover loop." << endl
-                 << "    When ubqminer reaches this kind of connection it simply quits." << endl
+                 << "    When hashwarp reaches this kind of connection it simply quits." << endl
                  << endl
-                 << "    When using stratum mode ubqminer tries to auto-detect the correct" << endl
+                 << "    When using stratum mode hashwarp tries to auto-detect the correct" << endl
                  << "    flavour provided by the pool. Should be fine in 99% of the cases." << endl
                  << "    Nevertheless you might want to fine tune the stratum flavour by" << endl
                  << "    any of of the following valid schemes :" << endl
@@ -1312,17 +1312,17 @@ int main(int argc, char** argv)
 #endif
 
     // Always out release version
-    auto* bi = ethminer_get_buildinfo();
+    auto* bi = hashwarp_get_buildinfo();
     cout << endl
          << endl
-         << "ubqminer " << bi->project_version << endl
+         << "hashwarp " << bi->project_version << endl
          << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id << endl
          << endl;
 
     if (argc < 2)
     {
         cerr << "No arguments specified. " << endl
-             << "Try 'ubqminer --help' to get a list of arguments." << endl
+             << "Try 'hashwarp --help' to get a list of arguments." << endl
              << endl;
         return 1;
     }
@@ -1375,7 +1375,7 @@ int main(int argc, char** argv)
         catch (std::invalid_argument& ex1)
         {
             cerr << "Error: " << ex1.what() << endl
-                 << "Try ubqminer --help to get an explained list of arguments." << endl
+                 << "Try hashwarp --help to get an explained list of arguments." << endl
                  << endl;
             return 1;
         }

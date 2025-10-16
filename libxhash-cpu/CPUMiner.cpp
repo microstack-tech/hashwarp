@@ -29,7 +29,7 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #endif
 
-#include <libethcore/Farm.h>
+#include <libparallaxcore/Farm.h>
 #include <xhash/global_context.hpp>
 #include <xhash/xhash.hpp>
 
@@ -251,7 +251,7 @@ bool CPUMiner::initEpoch_internal()
    Miner should stop working on the current block
    This happens if a
      * new work arrived                       or
-     * miner should stop (eg exit ethminer)   or
+     * miner should stop (eg exit hashwarp)   or
      * miner should pause
 */
 void CPUMiner::kick_miner()

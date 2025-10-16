@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libethcore/Farm.h>
+#include <libparallaxcore/Farm.h>
 #include <xhash/xhash.hpp>
 
 #include "CUDAMiner.h"

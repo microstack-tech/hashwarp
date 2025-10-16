@@ -20,8 +20,8 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #include "xhash_cuda_miner_kernel.h"
 
 #include <libdevcore/Worker.h>
-#include <libethcore/XHashAux.h>
-#include <libethcore/Miner.h>
+#include <libparallaxcore/XHashAux.h>
+#include <libparallaxcore/Miner.h>
 
 #include <functional>
 

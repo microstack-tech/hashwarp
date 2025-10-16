@@ -32,7 +32,7 @@
 #include <libdevcore/Common.h>
 #include <libdevcore/Worker.h>
 
-#include <libethcore/Miner.h>
+#include <libparallaxcore/Miner.h>
 
 #include <libhwmon/wrapnvml.h>
 #if defined(__linux)
@@ -254,7 +254,7 @@ private:
     void collectData(const boost::system::error_code& ec);
 
     /**
-     * @brief Spawn a file - must be located in the directory of ethminer binary
+     * @brief Spawn a file - must be located in the directory of hashwarp binary
      * @return false if file was not found or it is not executeable
      */
     bool spawn_file_in_bin_dir(const char* filename, const std::vector<std::string>& args);

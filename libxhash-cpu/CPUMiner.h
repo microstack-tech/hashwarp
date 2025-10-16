@@ -18,8 +18,8 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <libdevcore/Worker.h>
-#include <libethcore/XHashAux.h>
-#include <libethcore/Miner.h>
+#include <libparallaxcore/XHashAux.h>
+#include <libparallaxcore/Miner.h>
 
 #include <functional>
 

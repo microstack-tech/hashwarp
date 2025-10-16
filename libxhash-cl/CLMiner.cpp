@@ -5,8 +5,8 @@
 
 #include <boost/dll.hpp>
 
-#include <libethcore/Farm.h>
-#include <libethcore/XHashAux.h>
+#include <libparallaxcore/Farm.h>
+#include <libparallaxcore/XHashAux.h>
 #include <xhash/xhash.hpp>
 
 #include "CLMiner.h"

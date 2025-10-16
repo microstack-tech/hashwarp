@@ -30,7 +30,8 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #include <libethcore/Farm.h>
-#include <ethash/ethash.hpp>
+#include <xhash/global_context.hpp>
+#include <xhash/xhash.hpp>
 
 #include <boost/version.hpp>
 
@@ -68,25 +69,27 @@ using namespace eth;
 static size_t getTotalPhysAvailableMemory()
 {
 #if defined(__APPLE__) || defined(__MACOSX)
-    vm_statistics64_data_t	vm_stat;
+    vm_statistics64_data_t vm_stat;
     vm_size_t page_size;
     host_name_port_t host = mach_host_self();
     kern_return_t rv = host_page_size(host, &page_size);
-    if( rv != KERN_SUCCESS) {
+    if (rv != KERN_SUCCESS)
+    {
         cwarn << "Error in func " << __FUNCTION__ << " at host_page_size(...) \""
               << "\"\n";
         mach_error("host_page_size(...) error :", rv);
         return 0;
     }
     mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
-    rv = host_statistics (host, HOST_VM_INFO, (host_info_t)&vm_stat, &count);
-    if (rv != KERN_SUCCESS) {
+    rv = host_statistics(host, HOST_VM_INFO, (host_info_t)&vm_stat, &count);
+    if (rv != KERN_SUCCESS)
+    {
         cwarn << "Error in func " << __FUNCTION__ << " at host_statistics(...) \""
               << "\"\n";
         mach_error("host_statistics(...) error :", rv);
         return 0;
     }
-    return vm_stat.free_count*page_size;
+    return vm_stat.free_count * page_size;
 #elif defined(__linux__)
     long pages = sysconf(_SC_AVPHYS_PAGES);
     if (pages == -1L)
@@ -198,7 +201,8 @@ bool CPUMiner::initDevice()
            << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 
 #if defined(__APPLE__) || defined(__MACOSX)
-/* Not supported on MAC OSX. See https://developer.apple.com/library/archive/releasenotes/Performance/RN-AffinityAPI/ */
+/* Not supported on MAC OSX. See
+ * https://developer.apple.com/library/archive/releasenotes/Performance/RN-AffinityAPI/ */
 #elif defined(__linux__)
     cpu_set_t cpuset;
     int err;
@@ -261,9 +265,9 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
 {
     constexpr size_t blocksize = 30;
 
-    const auto& context = ethash::get_global_epoch_context_full(w.epoch);
-    const auto header = ethash::hash256_from_bytes(w.header.data());
-    const auto boundary = ethash::hash256_from_bytes(w.boundary.data());
+    const auto& context = xhash::get_global_epoch_context_full(w.epoch);
+    const auto header = xhash::hash256_from_bytes(w.header.data());
+    const auto boundary = xhash::hash256_from_bytes(w.boundary.data());
     auto nonce = w.startNonce;
 
     while (true)
@@ -278,7 +282,7 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
             break;
 
 
-        auto r = ethash::search(context, header, boundary, nonce, blocksize);
+        auto r = xhash::search(context, header, boundary, nonce, blocksize);
         if (r.solution_found)
         {
             h256 mix{reinterpret_cast<byte*>(r.mix_hash.bytes), h256::ConstructFromPointer};
@@ -373,7 +377,7 @@ void CPUMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollectio
 
         s.str("");
         s.clear();
-        s << "ethash::eval()/boost " << (BOOST_VERSION / 100000) << "."
+        s << "xhash::eval()/boost " << (BOOST_VERSION / 100000) << "."
           << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100);
         deviceDescriptor.name = s.str();
         deviceDescriptor.uniqueId = uniqueId;

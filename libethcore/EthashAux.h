@@ -21,7 +21,7 @@
 #include <libdevcore/Exceptions.h>
 #include <libdevcore/Worker.h>
 
-#include <ethash/ethash.hpp>
+#include <xhash/xhash.hpp>
 
 namespace dev
 {
@@ -44,7 +44,7 @@ struct EpochContext
     int epochNumber;
     int lightNumItems;
     size_t lightSize;
-    const ethash_hash512* lightCache;
+    const xhash_hash512* lightCache;
     int dagNumItems;
     uint64_t dagSize;
 };

@@ -30,14 +30,18 @@
 #include <libethash-cpu/CPUMiner.h>
 #endif
 
+// Use XHash epoch context for Parallax (XHash) support
+#include <xhash/global_context.hpp>
+#include <xhash/xhash.hpp>
+
 namespace dev
 {
 namespace eth
 {
 Farm* Farm::m_this = nullptr;
 
-Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection,
-    FarmSettings _settings, CUSettings _CUSettings, CLSettings _CLSettings, CPSettings _CPSettings)
+Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSettings _settings,
+    CUSettings _CUSettings, CLSettings _CLSettings, CPSettings _CPSettings)
   : m_Settings(std::move(_settings)),
     m_CUSettings(std::move(_CUSettings)),
     m_CLSettings(std::move(_CLSettings)),
@@ -205,12 +209,13 @@ void Farm::setWork(WorkPackage const& _newWp)
     // Retrieve appropriate EpochContext
     if (m_currentWp.epoch != _newWp.epoch)
     {
-        ethash::epoch_context _ec = ethash::get_global_epoch_context(_newWp.epoch);
+        // Retrieve XHash epoch context (provides light cache pointer and sizes)
+        const auto& _ec = xhash::get_global_epoch_context(_newWp.epoch);
         m_currentEc.epochNumber = _newWp.epoch;
         m_currentEc.lightNumItems = _ec.light_cache_num_items;
-        m_currentEc.lightSize = ethash::get_light_cache_size(_ec.light_cache_num_items);
+        m_currentEc.lightSize = xhash::get_light_cache_size(_ec.light_cache_num_items);
         m_currentEc.dagNumItems = _ec.full_dataset_num_items;
-        m_currentEc.dagSize = ethash::get_full_dataset_size(_ec.full_dataset_num_items);
+        m_currentEc.dagSize = xhash::get_full_dataset_size(_ec.full_dataset_num_items);
         m_currentEc.lightCache = _ec.light_cache;
 
         for (auto const& miner : m_miners)
@@ -275,8 +280,8 @@ bool Farm::start()
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::OpenCL)
             {
                 minerTelemetry.prefix = "cl";
-                m_miners.push_back(std::shared_ptr<Miner>(
-                    new CLMiner(m_miners.size(), m_CLSettings, it->second)));
+                m_miners.push_back(
+                    std::shared_ptr<Miner>(new CLMiner(m_miners.size(), m_CLSettings, it->second)));
             }
 #endif
 #if ETH_ETHASHCPU
@@ -681,8 +686,7 @@ bool Farm::spawn_file_in_bin_dir(const char* filename, const std::vector<std::st
         return true;
     }
     catch (...)
-    {
-    }
+    {}
     return false;
 }
 

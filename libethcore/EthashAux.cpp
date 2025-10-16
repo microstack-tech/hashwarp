@@ -17,16 +17,20 @@
 
 #include "EthashAux.h"
 
-#include <ethash/ethash.hpp>
+// Use xhash implementation for verification so CPU miner (which runs xhash)
+// produces results that are verified with the same algorithm.
+#include <xhash/global_context.hpp>
+#include <xhash/xhash.hpp>
 
 using namespace dev;
 using namespace eth;
 
 Result EthashAux::eval(int epoch, h256 const& _headerHash, uint64_t _nonce) noexcept
 {
-    auto headerHash = ethash::hash256_from_bytes(_headerHash.data());
-    auto& context = ethash::get_global_epoch_context(epoch);
-    auto result = ethash::hash(context, headerHash, _nonce);
+    auto headerHash = xhash::hash256_from_bytes(_headerHash.data());
+    // Use full epoch context to match miner-side evaluation.
+    auto& context = xhash::get_global_epoch_context_full(epoch);
+    auto result = xhash::hash(context, headerHash, _nonce);
     h256 mix{reinterpret_cast<byte*>(result.mix_hash.bytes), h256::ConstructFromPointer};
     h256 final{reinterpret_cast<byte*>(result.final_hash.bytes), h256::ConstructFromPointer};
     return {final, mix};

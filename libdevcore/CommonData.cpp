@@ -84,7 +84,10 @@ std::string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
     using namespace boost::multiprecision;
     using BigInteger = boost::multiprecision::cpp_int;
 
-    static BigInteger base("0x00000000ffff0000000000000000000000000000000000000000000000000000");
+    // Use full 256-bit max value (2^256 - 1) as base so target = floor((2^256 - 1) / difficulty).
+    // This matches Parallax XHash target calculation (see xhash spec).
+    static BigInteger base(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
     BigInteger product;
 
     if (diff == 0)

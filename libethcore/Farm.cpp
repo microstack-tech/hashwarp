@@ -18,16 +18,16 @@
 
 #include <libethcore/Farm.h>
 
-#if ETH_ETHASHCL
-#include <libethash-cl/CLMiner.h>
+#if ETH_XHASHCL
+#include <libxhash-cl/CLMiner.h>
 #endif
 
-#if ETH_ETHASHCUDA
-#include <libethash-cuda/CUDAMiner.h>
+#if ETH_XHASHCUDA
+#include <libxhash-cuda/CUDAMiner.h>
 #endif
 
-#if ETH_ETHASHCPU
-#include <libethash-cpu/CPUMiner.h>
+#if ETH_XHASHCPU
+#include <libxhash-cpu/CPUMiner.h>
 #endif
 
 // Use XHash epoch context for Parallax (XHash) support
@@ -267,7 +267,7 @@ bool Farm::start()
         for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
         {
             TelemetryAccountType minerTelemetry;
-#if ETH_ETHASHCUDA
+#if ETH_XHASHCUDA
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cuda)
             {
                 minerTelemetry.prefix = "cu";
@@ -275,7 +275,7 @@ bool Farm::start()
                     new CUDAMiner(m_miners.size(), m_CUSettings, it->second)));
             }
 #endif
-#if ETH_ETHASHCL
+#if ETH_XHASHCL
 
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::OpenCL)
             {
@@ -284,7 +284,7 @@ bool Farm::start()
                     std::shared_ptr<Miner>(new CLMiner(m_miners.size(), m_CLSettings, it->second)));
             }
 #endif
-#if ETH_ETHASHCPU
+#if ETH_XHASHCPU
 
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cpu)
             {
@@ -497,7 +497,7 @@ void Farm::submitProofAsync(Solution const& _s)
 {
     if (!m_Settings.noEval)
     {
-        Result r = EthashAux::eval(_s.work.epoch, _s.work.header, _s.nonce);
+        Result r = XHashAux::eval(_s.work.epoch, _s.work.header, _s.nonce);
         if (r.value > _s.work.boundary)
         {
             accountSolution(_s.midx, SolutionAccountingEnum::Failed);

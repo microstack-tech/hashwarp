@@ -17,10 +17,10 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "ethash_cuda_miner_kernel.h"
+#include "xhash_cuda_miner_kernel.h"
 
 #include <libdevcore/Worker.h>
-#include <libethcore/EthashAux.h>
+#include <libethcore/XHashAux.h>
 #include <libethcore/Miner.h>
 
 #include <functional>

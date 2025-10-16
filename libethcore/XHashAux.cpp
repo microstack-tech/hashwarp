@@ -15,7 +15,7 @@
     along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "EthashAux.h"
+#include "XHashAux.h"
 
 // Use xhash implementation for verification so CPU miner (which runs xhash)
 // produces results that are verified with the same algorithm.
@@ -25,7 +25,7 @@
 using namespace dev;
 using namespace eth;
 
-Result EthashAux::eval(int epoch, h256 const& _headerHash, uint64_t _nonce) noexcept
+Result XHashAux::eval(int epoch, h256 const& _headerHash, uint64_t _nonce) noexcept
 {
     auto headerHash = xhash::hash256_from_bytes(_headerHash.data());
     // Use full epoch context to match miner-side evaluation.

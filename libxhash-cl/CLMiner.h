@@ -8,7 +8,7 @@
 #include <fstream>
 
 #include <libdevcore/Worker.h>
-#include <libethcore/EthashAux.h>
+#include <libethcore/XHashAux.h>
 #include <libethcore/Miner.h>
 
 #include <boost/algorithm/string/predicate.hpp>

@@ -353,7 +353,7 @@ which confirms an executable file was found and ethminer tried to start it.
 
 ### miner_shuffle
 
-The mining process is nothing more that finding the right number (nonce) which, applied to an algorithm (ethash) and some data, gives a result which is below or equal to a given target. This is very very (very) short!
+The mining process is nothing more that finding the right number (nonce) which, applied to an algorithm (xhash) and some data, gives a result which is below or equal to a given target. This is very very (very) short!
 The range of nonces to be searched is a huge number: 2^64 = 18446744073709600000~ possible values. Each one has the same probability to be the _right_ one.
 
 Every time ethminer receives a job from a pool you'd expect the miner to begin searching from the first, but that would be boring. So the concept of scramble nonce has been introduced to achieve these goals:

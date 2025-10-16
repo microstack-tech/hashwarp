@@ -326,7 +326,7 @@ void CPUMiner::workLoop()
             continue;
         }
 
-        if (w.algo == "ethash")
+        if (w.algo == "xhash")
         {
             // Epoch change ?
             if (current.epoch != w.epoch)

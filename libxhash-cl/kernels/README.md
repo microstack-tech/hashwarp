@@ -1,4 +1,4 @@
-# ethash-kernels
+# xhash-kernels
 For whatever reason, Zawawawa released his Ethash kernels as open source code. This repo is a verbaitm copy of that code with a simplistic build environment and [Ethminer](https://github.com/ethereum-mining/ethminer) as a target. Although the code for Ethminer has yet to be released.
 
 ## Requirements

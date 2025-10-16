@@ -6,10 +6,10 @@
 #include <boost/dll.hpp>
 
 #include <libethcore/Farm.h>
-#include <ethash/ethash.hpp>
+#include <xhash/xhash.hpp>
 
 #include "CLMiner.h"
-#include "ethash.h"
+#include "xhash.h"
 
 using namespace dev;
 using namespace eth;
@@ -269,7 +269,7 @@ CLMiner::~CLMiner()
 }
 
 // NOTE: The following struct must match the one defined in
-// ethash.cl
+// xhash.cl
 struct SearchResults
 {
     struct
@@ -758,12 +758,12 @@ bool CLMiner::initEpoch_internal()
         // patch source code
         // note: The kernels here are simply compiled version of the respective .cl kernels
         // into a byte array by bin2h.cmake. There is no need to load the file by hand in runtime
-        // See libethash-cl/CMakeLists.txt: add_custom_command()
+        // See libxhash-cl/CMakeLists.txt: add_custom_command()
         // TODO: Just use C++ raw string literal.
         string code;
 
         cllog << "OpenCL kernel";
-        code = string(ethash_cl, ethash_cl + sizeof(ethash_cl));
+        code = string(xhash_cl, xhash_cl + sizeof(xhash_cl));
 
         addDefinition(code, "WORKSIZE", m_settings.localWorkSize);
         addDefinition(code, "ACCESSES", 64);
@@ -806,10 +806,10 @@ bool CLMiner::initEpoch_internal()
             vector<unsigned char> bin_data;
             std::stringstream fname_strm;
 
-            /* Open kernels/ethash_{devicename}_lws{local_work_size}.bin */
+            /* Open kernels/xhash_{devicename}_lws{local_work_size}.bin */
             std::transform(device_name.begin(), device_name.end(), device_name.begin(), ::tolower);
             fname_strm << boost::dll::program_location().parent_path().string()
-                       << "/kernels/ethash_" << device_name << "_lws" << m_settings.localWorkSize
+                       << "/kernels/xhash_" << device_name << "_lws" << m_settings.localWorkSize
                        << (m_settings.noExit ? "" : "_exit") << ".bin";
             cllog << "Loading binary kernel " << fname_strm.str();
             try

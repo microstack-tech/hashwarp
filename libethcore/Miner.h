@@ -22,7 +22,7 @@
 #include <numeric>
 #include <string>
 
-#include "EthashAux.h"
+#include "XHashAux.h"
 #include <libdevcore/Common.h>
 #include <libdevcore/Log.h>
 #include <libdevcore/Worker.h>

@@ -16,7 +16,7 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <libethcore/Farm.h>
-#include <ethash/ethash.hpp>
+#include <xhash/xhash.hpp>
 
 #include "CUDAMiner.h"
 
@@ -156,9 +156,9 @@ bool CUDAMiner::initEpoch_internal()
             m_epochContext.lightSize, cudaMemcpyHostToDevice));
 
         set_constants(dag, m_epochContext.dagNumItems, light,
-            m_epochContext.lightNumItems);  // in ethash_cuda_miner_kernel.cu
+            m_epochContext.lightNumItems);  // in xhash_cuda_miner_kernel.cu
 
-        ethash_generate_dag(
+        xhash_generate_dag(
             m_epochContext.dagSize, m_settings.gridSize, m_settings.blockSize, m_streams[0]);
 
         cudalog << "Generated DAG + Light in "
@@ -342,7 +342,7 @@ void CUDAMiner::search(
         buffer.count = 0;
 
         // Run the batch for this stream
-        run_ethash_search(m_settings.gridSize, m_settings.blockSize, stream, &buffer, start_nonce);
+        run_xhash_search(m_settings.gridSize, m_settings.blockSize, stream, &buffer, start_nonce);
     }
 
     // process stream batches until we get new work.
@@ -402,7 +402,7 @@ void CUDAMiner::search(
             // restart the stream on the next batch of nonces
             // unless we are done for this round.
             if (!done)
-                run_ethash_search(
+                run_xhash_search(
                     m_settings.gridSize, m_settings.blockSize, stream, &buffer, start_nonce);
 
             if (found_count)

@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-#include <ethash/ethash.hpp>
+#include <xhash/xhash.hpp>
 
 using namespace std;
 using namespace dev;

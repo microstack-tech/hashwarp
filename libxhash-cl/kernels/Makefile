@@ -6,7 +6,7 @@ AS=clrxasm
 
 .PHONY: all
 all: ellesmere tonga baffin gfx900 gfx901 gfx906
-	@echo "Built ethash kernel for Ellesmere, Tonga, Baffin, Gfx900 and Gfx901 architectures."
+	@echo "Built xhash kernel for Ellesmere, Tonga, Baffin, Gfx900 and Gfx901 architectures."
 
 .PHONY: clean
 clean:
@@ -15,8 +15,8 @@ clean:
 %.bin:
 	$(eval ARCH:=$(shell echo "$*" | sed -n 's/\(^[A-Za-z0-9]*\).*/\1/p'))
 	$(eval LWS:=$(shell echo "$*" | sed -n 's/.*lws\([0-9]\+\)/\1/p'))
-	$(AS) $(SDIR)/GCN_ethash.isa -g $(ARCH) -DFAST_EXIT -Dworksize=$(LWS) $(ASFLAGS) -o $(BUILD)/ethash_$(ARCH)_lws$(LWS)_exit.bin
-	$(AS) $(SDIR)/GCN_ethash.isa -g $(ARCH) -Dworksize=$(LWS) $(ASFLAGS) -o $(BUILD)/ethash_$(ARCH)_lws$(LWS).bin
+	$(AS) $(SDIR)/GCN_xhash.isa -g $(ARCH) -DFAST_EXIT -Dworksize=$(LWS) $(ASFLAGS) -o $(BUILD)/xhash_$(ARCH)_lws$(LWS)_exit.bin
+	$(AS) $(SDIR)/GCN_xhash.isa -g $(ARCH) -Dworksize=$(LWS) $(ASFLAGS) -o $(BUILD)/xhash_$(ARCH)_lws$(LWS).bin
 
 .PHONY: ellesmere
 ellesmere: ellesmere_lws64.bin ellesmere_lws128.bin ellesmere_lws256.bin

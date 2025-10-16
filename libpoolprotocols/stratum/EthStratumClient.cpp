@@ -1,6 +1,6 @@
 #include <ethminer/buildinfo.h>
 #include <libdevcore/Log.h>
-#include <ethash/ethash.hpp>
+#include <xhash/xhash.hpp>
 
 #include "EthStratumClient.h"
 
@@ -1474,7 +1474,7 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
               "params": {
                   "epoch" : "dc",
                   "target" : "0112e0be826d694b2e62d01511f12a6061fbaec8bc02357593e70e52ba",
-                  "algo" : "ethash",
+                  "algo" : "xhash",
                   "extranonce" : "af4c"
               }
             }
@@ -1503,7 +1503,7 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
                 m_session->nextWorkBoundary = h256(target);
             }
 
-            m_session->algo = jPrm.get("algo", "ethash").asString();
+            m_session->algo = jPrm.get("algo", "xhash").asString();
             string enonce = jPrm.get("extranonce", "").asString();
             if (!enonce.empty())
                 processExtranonce(enonce);

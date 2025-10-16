@@ -1,5 +1,5 @@
 set(SOURCES
- EthashAux.h EthashAux.cpp
+ XHashAux.h XHashAux.cpp
  Farm.cpp Farm.h
  Miner.h Miner.cpp
 )
@@ -9,12 +9,12 @@ include_directories(BEFORE ..)
 add_library(ethcore ${SOURCES})
 target_link_libraries(ethcore PUBLIC devcore xhash::xhash xhash::global-context PRIVATE hwmon)
 
-if(ETHASHCL)
-  target_link_libraries(ethcore PRIVATE ethash-cl)
+if(XHASHCL)
+  target_link_libraries(ethcore PRIVATE xhash-cl)
 endif()
-if(ETHASHCUDA)
-  target_link_libraries(ethcore PUBLIC ethash-cuda)
+if(XHASHCUDA)
+  target_link_libraries(ethcore PUBLIC xhash-cuda)
 endif()
-if(ETHASHCPU)
-  target_link_libraries(ethcore PUBLIC ethash-cpu)
+if(XHASHCPU)
+  target_link_libraries(ethcore PUBLIC xhash-cpu)
 endif()

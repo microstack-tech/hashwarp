@@ -33,7 +33,7 @@ struct Result
     h256 mixHash;
 };
 
-class EthashAux
+class XHashAux
 {
 public:
     static Result eval(int epoch, h256 const& _headerHash, uint64_t _nonce) noexcept;
@@ -67,7 +67,7 @@ struct WorkPackage
     uint64_t startNonce = 0;
     uint16_t exSizeBytes = 0;
 
-    std::string algo = "ethash";
+    std::string algo = "xhash";
 };
 
 struct Solution

@@ -6,6 +6,7 @@
 #include <boost/dll.hpp>
 
 #include <libethcore/Farm.h>
+#include <libethcore/XHashAux.h>
 #include <xhash/xhash.hpp>
 
 #include "CLMiner.h"
@@ -406,8 +407,20 @@ void CLMiner::workLoop()
                         h256 mix;
                         memcpy(mix.data(), (char*)results.rslt[i].mix, sizeof(results.rslt[i].mix));
 
+                        // Runtime verification: compute expected mix on CPU using XHash and compare.
+                        auto expected = XHashAux::eval(current.epoch, current.header, nonce);
+                        if (expected.mixHash != mix)
+                        {
+                            // Log detailed mismatch to help debug GPU instabilities vs packing issues
+                            cllog << EthRed << "GPU " << m_index << " incorrect result" << EthReset;
+                            cllog << EthRed << " header: " << current.header.abridged() << " nonce: 0x" << toHex(nonce)
+                                  << " kernel_mix: 0x" << mix.hex() << " cpu_mix: 0x" << expected.mixHash.hex()
+                                  << EthReset;
+                        }
+
                         Farm::f().submitProof(Solution{
                             nonce, mix, current, std::chrono::steady_clock::now(), m_index});
+
                         cllog << EthWhite << "Job: " << current.header.abridged() << " Sol: 0x"
                               << toHex(nonce) << EthReset;
                     }

@@ -26,9 +26,11 @@
 #include <algorithm>
 #include <cstring>
 #include <string>
+#include <sstream>
 #include <type_traits>
 #include <unordered_set>
 #include <vector>
+#include <iterator>
 
 #include <boost/algorithm/string.hpp>
 

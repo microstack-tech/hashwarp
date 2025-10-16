@@ -195,8 +195,71 @@ static __constant uint2 const Keccak_f1600_RC[24] = {
 } while(0)
 
 
-#define fnv(x, y)        ((x) * FNV_PRIME ^ (y))
-#define fnv_reduce(v)    fnv(fnv(fnv(v.x, v.y), v.z), v.w)
+#if 1
+/*
+ * XHash requires a true FNV-1 style mixing function: process each byte
+ * little-endian, multiply by the FNV prime then xor the byte. We provide
+ * elemental implementations for scalar and vector uint types so existing
+ * call sites (which pass uint, uint2, uint4, uint8) keep working.
+ */
+
+static inline uint fnv_u(uint a, uint b)
+{
+    uint h = a;
+    for (int i = 0; i < 4; ++i) {
+        h = h * (uint)FNV_PRIME;
+        h = h ^ (b & 0xFFu);
+        b = b >> 8;
+    }
+    return h;
+}
+
+static inline uint2 fnv_u2(uint2 a, uint2 b)
+{
+    uint2 h = a;
+    for (int i = 0; i < 4; ++i) {
+        h = h * (uint2)(FNV_PRIME);
+        h = h ^ (b & (uint2)(0xFFu));
+        b = b >> (uint2)(8);
+    }
+    return h;
+}
+
+static inline uint4 fnv_u4(uint4 a, uint4 b)
+{
+    uint4 h = a;
+    for (int i = 0; i < 4; ++i) {
+        h = h * (uint4)(FNV_PRIME);
+        h = h ^ (b & (uint4)(0xFFu));
+        b = b >> (uint4)(8);
+    }
+    return h;
+}
+
+static inline uint8 fnv_u8(uint8 a, uint8 b)
+{
+    uint8 h = a;
+    for (int i = 0; i < 4; ++i) {
+        h = h * (uint8)(FNV_PRIME);
+        h = h ^ (b & (uint8)(0xFFu));
+        b = b >> (uint8)(8);
+    }
+    return h;
+}
+static inline uint fnv_reduce(uint4 v)
+{
+    uint r = fnv_u(v.x, v.y);
+    r = fnv_u(r, v.z);
+    r = fnv_u(r, v.w);
+    return r;
+}
+
+/*
+ * Note: previous macro fallback removed to avoid name conflicts with
+ * explicit function variants (OpenCL C has no function overloading).
+ */
+
+#endif
 
 typedef union {
     uint uints[128 / sizeof(uint)];
@@ -226,7 +289,7 @@ typedef union {
 #define MIX(x) \
 do { \
     if (get_local_id(0) == lane_idx) { \
-        buffer[hash_id] = fnv(init0 ^ (a + x), ((uint *)&mix)[x]) % dag_size; \
+        buffer[hash_id] = fnv_u(init0 ^ (a + x), ((uint *)&mix)[x]) % dag_size; \
     } \
     barrier(CLK_LOCAL_MEM_FENCE); \
     uint idx = buffer[hash_id]; \
@@ -234,20 +297,20 @@ do { \
     g_dag = (__global hash128_t const*) _g_dag0; \
     if (idx & 1) \
         g_dag = (__global hash128_t const*) _g_dag1; \
-    mix = fnv(mix, g_dag[idx >> 1].uint8s[thread_id]); \
+    mix = fnv_u8(mix, g_dag[idx >> 1].uint8s[thread_id]); \
 } while(0)
 
 #else
 
 #define MIX(x) \
 do { \
-    buffer[get_local_id(0)] = fnv(init0 ^ (a + x), ((uint *)&mix)[x]) % dag_size; \
+    buffer[get_local_id(0)] = fnv_u(init0 ^ (a + x), ((uint *)&mix)[x]) % dag_size; \
     uint idx = buffer[lane_idx]; \
     __global hash128_t const* g_dag; \
     g_dag = (__global hash128_t const*) _g_dag0; \
     if (idx & 1) \
         g_dag = (__global hash128_t const*) _g_dag1; \
-    mix = fnv(mix, g_dag[idx >> 1].uint8s[thread_id]); \
+    mix = fnv_u8(mix, g_dag[idx >> 1].uint8s[thread_id]); \
     mem_fence(CLK_LOCAL_MEM_FENCE); \
 } while(0)
 #endif
@@ -299,7 +362,8 @@ __kernel void search(
     state[2] = g_header[2];
     state[3] = g_header[3];
     state[4] = as_uint2(start_nonce + gid);
-    state[5] = as_uint2(0x0000000000000001UL);
+    /* Use NIST SHA3 domain separator 0x06 instead of Keccak's 0x01 */
+    state[5] = as_uint2(0x0000000000000006UL);
     state[6] = (uint2)(0);
     state[7] = (uint2)(0);
     state[8] = as_uint2(0x8000000000000000UL);
@@ -380,7 +444,8 @@ __kernel void search(
         mixhash[2] = state[10];
         mixhash[3] = state[11];
 
-        state[12] = as_uint2(0x0000000000000001UL);
+    /* Use NIST SHA3 domain separator 0x06 for SHA3 finalization */
+    state[12] = as_uint2(0x0000000000000006UL);
         state[13] = (uint2)(0);
         state[14] = (uint2)(0);
         state[15] = (uint2)(0);
@@ -430,7 +495,8 @@ static void SHA3_512(uint2 *s)
     for (uint i = 0; i < 8; ++i)
         st[i] = s[i];
 
-    st[8] = (uint2)(0x00000001, 0x80000000);
+    /* NIST SHA3 padding: domain separator 0x06 (low byte), and final 0x80 at the end */
+    st[8] = (uint2)(0x00000006, 0x80000000);
 
     for (uint i = 9; i != 25; ++i)
         st[i] = (uint2)(0);
@@ -462,7 +528,7 @@ __kernel void GenerateDAG(uint start, __global const uint16 *_Cache, __global ui
     dagNode[thread_id] = DAGNode;
     barrier(CLK_LOCAL_MEM_FENCE);
     for (uint i = 0; i < 256; ++i) {
-        uint ParentIdx = fnv(NodeIdx ^ i, dagNode[thread_id].dwords[i & 15]) % light_size;
+    uint ParentIdx = fnv_u(NodeIdx ^ i, dagNode[thread_id].dwords[i & 15]) % light_size;
         indexes[thread_id] = ParentIdx;
         barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -470,7 +536,7 @@ __kernel void GenerateDAG(uint start, __global const uint16 *_Cache, __global ui
             uint parentIndex = indexes[t];
             parentNode = Cache + parentIndex;
 
-            dagNode[t].dqwords[thread_id] = fnv(dagNode[t].dqwords[thread_id], parentNode->dqwords[thread_id]);
+            dagNode[t].dqwords[thread_id] = fnv_u4(dagNode[t].dqwords[thread_id], parentNode->dqwords[thread_id]);
             barrier(CLK_LOCAL_MEM_FENCE);
         }
     }

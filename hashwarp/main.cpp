@@ -224,41 +224,42 @@ public:
         app.add_flag("-h,--help", bhelp, "Show help");
 
         app.add_set("-H,--help-ext", shelpExt,
-            {
-                "con", "test",
+            {"con", "test",
 #if ETH_XHASHCL
-                    "cl",
+                "cl",
 #endif
 #if ETH_XHASHCUDA
-                    "cu",
+                "cu",
 #endif
 #if ETH_XHASHCPU
-                    "cp",
+                "cp",
 #endif
 #if API_CORE
-                    "api",
+                "api",
 #endif
-                    "misc", "env"
-            },
+                "misc", "env"},
             "", true);
 
         bool version = false;
 
-        app.add_option("--ergodicity", m_FarmSettings.ergodicity, "", true)->check(CLI::Range(0, 2));
+        app.add_option("--ergodicity", m_FarmSettings.ergodicity, "", true)
+            ->check(CLI::Range(0, 2));
 
         app.add_flag("-V,--version", version, "Show program version");
 
         app.add_option("-v,--verbosity", g_logOptions, "", true)->check(CLI::Range(LOG_NEXT - 1));
 
-        app.add_option("--farm-recheck", m_PoolSettings.getWorkPollInterval, "", true)->check(CLI::Range(1, 99999));
+        app.add_option("--farm-recheck", m_PoolSettings.getWorkPollInterval, "", true)
+            ->check(CLI::Range(1, 99999));
 
-        app.add_option("--farm-retries", m_PoolSettings.connectionMaxRetries, "", true)->check(CLI::Range(0, 99999));
+        app.add_option("--farm-retries", m_PoolSettings.connectionMaxRetries, "", true)
+            ->check(CLI::Range(0, 99999));
 
         app.add_option("--retry-delay", m_PoolSettings.delayBeforeRetry, "", true)
             ->check(CLI::Range(1, 999));
-        
+
         app.add_option("--work-timeout", m_PoolSettings.noWorkTimeout, "", true)
-            ->check(CLI::Range(180, 99999));
+            ->check(CLI::Range(7200, 99999));
 
         app.add_option("--response-timeout", m_PoolSettings.noResponseTimeout, "", true)
             ->check(CLI::Range(2, 999));
@@ -334,8 +335,8 @@ public:
         app.add_option("--cuda-grid-size,--cu-grid-size", m_CUSettings.gridSize, "", true)
             ->check(CLI::Range(1, 131072));
 
-        app.add_set(
-            "--cuda-block-size,--cu-block-size", m_CUSettings.blockSize, {32, 64, 128, 256}, "", true);
+        app.add_set("--cuda-block-size,--cu-block-size", m_CUSettings.blockSize, {32, 64, 128, 256},
+            "", true);
 
         string sched = "sync";
         app.add_set(
@@ -354,7 +355,8 @@ public:
 
         app.add_flag("--noeval", m_FarmSettings.noEval, "");
 
-        app.add_option("-L,--dag-load-mode", m_FarmSettings.dagLoadMode, "", true)->check(CLI::Range(1));
+        app.add_option("-L,--dag-load-mode", m_FarmSettings.dagLoadMode, "", true)
+            ->check(CLI::Range(1));
 
         bool cl_miner = false;
         app.add_flag("-G,--opencl", cl_miner, "");
@@ -366,7 +368,8 @@ public:
 #if ETH_XHASHCPU
         app.add_flag("--cpu", cpu_miner, "");
 #endif
-        auto sim_opt = app.add_option("-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
+        auto sim_opt = app.add_option(
+            "-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
 
         app.add_option("--tstop", m_FarmSettings.tempStop, "", true)->check(CLI::Range(30, 100));
         app.add_option("--tstart", m_FarmSettings.tempStart, "", true)->check(CLI::Range(30, 100));
@@ -720,8 +723,7 @@ public:
         }
 #endif
 #if ETH_XHASHCPU
-        if (!m_CPSettings.devices.size() &&
-            (m_minerType == MinerType::CPU))
+        if (!m_CPSettings.devices.size() && (m_minerType == MinerType::CPU))
         {
             for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
             {
@@ -958,8 +960,7 @@ public:
         {
             cout << "CPU Extended Options :" << endl
                  << endl
-                 << "    Use this extended CPU arguments"
-                 << endl
+                 << "    Use this extended CPU arguments" << endl
                  << endl
                  << "    --cp-devices        UINT {} Default not set" << endl
                  << "                        Space separated list of device indexes to use" << endl
@@ -1211,7 +1212,6 @@ public:
 private:
     void doMiner()
     {
-
         new PoolManager(m_PoolSettings);
         if (m_mode != OperationMode::Simulation)
             for (auto conn : m_PoolSettings.connections)
@@ -1268,12 +1268,12 @@ private:
 
     FarmSettings m_FarmSettings;  // Operating settings for Farm
     PoolSettings m_PoolSettings;  // Operating settings for PoolManager
-    CLSettings m_CLSettings;          // Operating settings for CL Miners
-    CUSettings m_CUSettings;          // Operating settings for CUDA Miners
-    CPSettings m_CPSettings;          // Operating settings for CPU Miners
+    CLSettings m_CLSettings;      // Operating settings for CL Miners
+    CUSettings m_CUSettings;      // Operating settings for CUDA Miners
+    CPSettings m_CPSettings;      // Operating settings for CPU Miners
 
     //// -- Pool manager related params
-    //std::vector<std::shared_ptr<URI>> m_poolConns;
+    // std::vector<std::shared_ptr<URI>> m_poolConns;
 
 
     // -- CLI Interface related params
@@ -1285,10 +1285,10 @@ private:
 
 #if API_CORE
     // -- API and Http interfaces related params
-    string m_api_bind;                  // API interface binding address in form <address>:<port>
-    string m_api_address = "0.0.0.0";   // API interface binding address (Default any)
-    int m_api_port = 0;                 // API interface binding port
-    string m_api_password;              // API interface write protection password
+    string m_api_bind;                 // API interface binding address in form <address>:<port>
+    string m_api_address = "0.0.0.0";  // API interface binding address (Default any)
+    int m_api_port = 0;                // API interface binding port
+    string m_api_password;             // API interface write protection password
 #endif
 
 #if ETH_DBUS

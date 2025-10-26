@@ -1,7 +1,7 @@
 version: "{build}"
 branches:
   only:
-    - master
+    - main
     - /v\d+\..+/
     - /release.*/
     - appveyor

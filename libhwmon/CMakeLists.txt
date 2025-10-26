@@ -12,7 +12,7 @@ if (UNIX)
   list(APPEND HWMON_LINK_LIBRARIES dl)
 endif ()
 
-target_link_libraries(hwmon ${HWMON_LINK_LIBRARIES})
+target_link_libraries(hwmon ${HWMON_LINK_LIBRARIES} Boost::filesystem)
 target_include_directories(hwmon PRIVATE ..)
 
 if (XHASHCUDA)

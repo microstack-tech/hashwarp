@@ -14,8 +14,6 @@ clone_depth: 100
 
 environment:
   matrix:
-    - CUDA_VER: "9.0"
-      XHASH_CUDA_ARCHS: "52;60;61;70"
     - CUDA_VER: "11.8.0"
       XHASH_CUDA_ARCHS: "70;75;80;86;89"
     - CUDA_VER: "13.0.2"
@@ -24,7 +22,6 @@ environment:
     secure: VnpF1MH5MEFvUI5MiMMMFlmbDdst+bfom5ZFVgalYPp/SYDhbejjXJm9Dla/IgpC
 
 cache:
-  - C:\CUDAInstallers\cuda_9.0.176_win10-exe.exe           -> appveyor.yml
   - C:\CUDAInstallers\cuda_11.8.0_522.06_windows.exe       -> appveyor.yml
   - C:\CUDAInstallers\cuda_13.0.2_windows.exe              -> appveyor.yml
 
@@ -32,9 +29,6 @@ install: |
   git submodule update --init --recursive
 
   rem ----- Map CUDA_VER -> installer filename and URL -----
-  if "%CUDA_VER%"=="9.0"    set "CUDA_ARCHIVE=cuda_9.0.176_win10-exe.exe"
-  if "%CUDA_VER%"=="9.0"    set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/9.0/Prod/local_installers/%CUDA_ARCHIVE%"
-
   if "%CUDA_VER%"=="11.8.0" set "CUDA_ARCHIVE=cuda_11.8.0_522.06_windows.exe"
   if "%CUDA_VER%"=="11.8.0" set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/%CUDA_ARCHIVE%"
 
@@ -46,8 +40,13 @@ install: |
   if not exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" echo Downloading %CUDA_ARCHIVE% ...
   if not exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" curl -L "%CUDA_URL%" -o "C:\CUDAInstallers\%CUDA_ARCHIVE%"
 
+  rem ----- Workaround: extract the SFX and run setup.exe -----
+  set "CUDA_EXTRACT=C:\CUDAExtract\%CUDA_VER%"
+  if not exist "%CUDA_EXTRACT%" mkdir "%CUDA_EXTRACT%"
+  7z x "C:\CUDAInstallers\%CUDA_ARCHIVE%" -o"%CUDA_EXTRACT%" -y
+
   rem ----- Silent install Toolkit only (no driver) -----
-  "C:\CUDAInstallers\%CUDA_ARCHIVE%" -s toolkit
+  "%CUDA_EXTRACT%\setup.exe" -s toolkit
 
   rem ----- Set CUDA_PATH and PATH -----
   set "CUDA_MAJOR_MINOR=%CUDA_VER:~0,4%"

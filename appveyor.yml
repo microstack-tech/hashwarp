@@ -66,7 +66,7 @@ build_script:
 
       call "%VC_CMD%"
 
-      set "CMAKE_ARGS=-G \"%GEN\" -H. -Bbuild -DXHASHCUDA=ON -DAPICORE=ON -DHUNTER_JOBS_NUMBER=%NUMBER_OF_PROCESSORS% -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS%"
+      set "CMAKE_ARGS=-G \"%GEN\" -H. -Bbuild -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS%"
       cmake %CMAKE_ARGS%
       cmake --build build --config Release --target package
   - ps: |

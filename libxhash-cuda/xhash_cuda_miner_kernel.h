@@ -14,6 +14,9 @@
 // of 2 here will yield better CUDA optimization
 #define MAX_SEARCH_RESULTS 4U
 
+#ifndef XHASH_CUDA_TYPES_DEFINED
+#define XHASH_CUDA_TYPES_DEFINED
+// Mirror Search_Result/Search_results layout used by host code
 struct Search_Result
 {
     // One word for gid and 8 for mix hash
@@ -25,8 +28,9 @@ struct Search_Result
 struct Search_results
 {
     Search_Result result[MAX_SEARCH_RESULTS];
-    uint32_t count = 0;
+    uint32_t count;
 };
+#endif // XHASH_CUDA_TYPES_DEFINED
 
 #define ACCESSES 64
 #define THREADS_PER_HASH (128 / 16)

@@ -6,7 +6,7 @@ set(CMAKE_CUDA_STANDARD 11)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 # Allow users to specify CUDA arch list; default to RTX 40xx (SM89) for modern toolchains
-set(XHASH_CUDA_ARCHS "89" CACHE STRING "CUDA SM architectures to build for (e.g. 75;86;89).")
+set(XHASH_CUDA_ARCHS "60;61;62;70;72;75;80;86;87;89;90" CACHE STRING "CUDA SM architectures to build for (e.g. 75;86;89).")
 
 # Collect sources
 file(GLOB sources "*.cpp" "*.cu")

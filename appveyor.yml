@@ -8,7 +8,6 @@ branches:
     - hunter
 clone_depth: 100
 os: Visual Studio 2019
-
 environment:
   matrix:
     - CUDA_VER: "9.0"
@@ -22,24 +21,23 @@ environment:
 
 cache:
   - C:\CUDA\v9.0 -> appveyor.yml
-  - C:\CUDA\v11.8 -> appveyor.yml
-  - C:\CUDA\v13.0 -> appveyor.yml
+  - C:\CUDA\v11.8.0 -> appveyor.yml
+  - C:\CUDA\v13.0.2 -> appveyor.yml
 
 install: |
   git submodule update --init --recursive
-  if "%CUDA_VER%"=="" set CUDA_VER=12.3
-  set CUDA_URL_PRIMARY=
-  if "%CUDA_VER%" == "9.0" set CUDA_URL_PRIMARY=https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_win10-exe
-  if "%CUDA_VER%" == "11.8" set CUDA_URL_PRIMARY=https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda_11.8.0_522.06_windows.exe
-  if "%CUDA_VER%" == "13.0" set CUDA_URL_PRIMARY=https://developer.download.nvidia.com/compute/cuda/13.0.2/local_installers/cuda_13.0.2_windows.exe
+  if "%CUDA_VER%"=="" set CUDA_VER=13.0.2
+
+  if "%CUDA_VER%" == "9.0" set CUDA_ARCHIVE=cuda_9.0.176_win10-exe
+  if "%CUDA_VER%" == "11.8.0" set CUDA_ARCHIVE=cuda_11.8.0_522.06_windows.exe
+  if "%CUDA_VER%" == "13.0.2" set CUDA_ARCHIVE=cuda_13.0.2_windows.exe
+
+  if NOT EXIST C:\CUDA\v%CUDA_VER% (if "%CUDA_VER%" NEQ "9.0" curl -L https://developer.nvidia.com/compute/cuda/%CUDA_VER%/local_installers/%CUDA_ARCHIVE% -o %CUDA_ARCHIVE%.exe)
+  if NOT EXIST C:\CUDA\v%CUDA_VER% (if "%CUDA_VER%" == "9.0" curl -L https://developer.nvidia.com/compute/cuda/%CUDA_VER%/Prod/local_installers/%CUDA_ARCHIVE% -o %CUDA_ARCHIVE%.exe)
+
   if NOT EXIST C:\CUDA mkdir C:\CUDA
-  set DO_CUDA_INSTALL=1
-  if EXIST C:\CUDA\v%CUDA_VER% set DO_CUDA_INSTALL=0
-  if "%DO_CUDA_INSTALL%"=="1" set CUDA_EXE=cuda_installer.exe
-  if "%DO_CUDA_INSTALL%"=="1" if NOT "%CUDA_URL_PRIMARY%"=="" curl -L "%CUDA_URL_PRIMARY%" -o %CUDA_EXE%
-  if "%DO_CUDA_INSTALL%"=="1" if NOT EXIST %CUDA_EXE% set DO_CUDA_INSTALL=0
-  if "%DO_CUDA_INSTALL%"=="1" 7z x %CUDA_EXE% -oC:\CUDA nvcc/* nvrtc*/*
-  if "%DO_CUDA_INSTALL%"=="1" if errorlevel 1 echo 7z extraction failed & exit /b 1
+  if NOT EXIST C:\CUDA\v%CUDA_VER% 7z x %CUDA_ARCHIVE%.exe -oC:\CUDA nvcc/* nvrtc*/*
+  if NOT EXIST C:\CUDA\v%CUDA_VER% rename C:\CUDA\nvcc v%CUDA_VER%
 
   set PATH=C:\Python39-x64;C:\Python39-x64\Scripts;%PATH%;C:\CUDA\v%CUDA_VER%\bin
   pip install requests gitpython
@@ -48,7 +46,7 @@ install: |
 build_script:
   - call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\Common7\Tools\VsMSBuildCmd.bat"
   - set GEN=Visual Studio 16 2019
-  - set CMAKE_ARGS=-G "%GEN%" -H. -Bbuild -DXHASHCUDA=ON -DAPICORE=ON -DHUNTER_JOBS_NUMBER=%NUMBER_OF_PROCESSORS% -DCUDAToolkit_ROOT=%CUDAToolkit_ROOT% -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS%
+  - set CMAKE_ARGS=-G "%GEN%" -H. -Bbuild -DXHASHCUDA=ON -DAPICORE=ON -DHUNTER_JOBS_NUMBER=%NUMBER_OF_PROCESSORS% -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS%
   - cmake %CMAKE_ARGS%
   - cmake --build build --config Release --target package
   - ps: |

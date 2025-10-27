@@ -78,7 +78,11 @@ install: |
   set CUDA_PATH=C:\CUDA\v%CUDA_VER%
   set CUDAToolkit_ROOT=C:\CUDA\v%CUDA_VER%
   set PATH=%CUDA_PATH%\bin;%PATH%
-  nvcc -V || echo "nvcc not found in PATH; build will rely on CUDAToolkit headers+libs only"
+  rem Show nvcc version if available without failing the build when missing
+  set NVCC_OK=0
+  where nvcc >nul 2>nul && set NVCC_OK=1
+  if "%NVCC_OK%"=="1" nvcc -V
+  if "%NVCC_OK%"=="0" echo nvcc not found in PATH; build will rely on CUDAToolkit headers+libs only
 
 build_script:
   - call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\Common7\Tools\VsMSBuildCmd.bat"

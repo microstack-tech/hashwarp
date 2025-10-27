@@ -2,10 +2,6 @@ hunter_config(CURL VERSION ${HUNTER_CURL_VERSION} CMAKE_ARGS HTTP_ONLY=ON CMAKE_
 hunter_config(Boost VERSION 1.83.0)
 hunter_config(CLI11 VERSION 1.7.1)
 hunter_config(xhash GIT_SUBMODULE "cmake/xhash")
-
-if(MSVC)
-  hunter_config(OpenCL VERSION 2.1-p3 CMAKE_ARGS
-    OPENCL_ICD_LOADER_BUILD_SHARED_LIBS=ON
-    CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
-  )
-endif()
+hunter_config(OpenCL VERSION 2.1-p3 CMAKE_ARGS
+  CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
+)

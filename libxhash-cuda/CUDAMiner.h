@@ -17,7 +17,31 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "xhash_cuda_miner_kernel.h"
+// Avoid pulling CUDA headers into non-CUDA targets including this header.
+// Provide minimal shared types and forward declarations here.
+
+#include <cstdint>
+
+#ifndef XHASH_CUDA_TYPES_DEFINED
+#define XHASH_CUDA_TYPES_DEFINED
+// Mirror Search_Result/Search_results layout used by CUDA kernels
+struct Search_Result
+{
+    uint32_t gid;
+    uint32_t mix[8];
+    uint32_t pad[7];
+};
+
+struct Search_results
+{
+    Search_Result result[4];
+    uint32_t count;
+};
+#endif // XHASH_CUDA_TYPES_DEFINED
+
+// Forward declare CUDA stream type to avoid depending on cuda_runtime.h here
+struct CUstream_st;
+typedef CUstream_st* cudaStream_t;
 
 #include <libdevcore/Worker.h>
 #include <libparallaxcore/XHashAux.h>

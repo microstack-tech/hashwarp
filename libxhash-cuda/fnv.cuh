@@ -1,18 +1,51 @@
-#define FNV_PRIME 0x01000193
+#define FNV_PRIME 0x01000193u
 
-#define fnv(x, y) ((x)*FNV_PRIME ^ (y))
+// XHash uses true FNV-1: for each 32-bit b, multiply by prime then xor each byte of b (LE)
+DEV_INLINE uint32_t fnv_u32(uint32_t a, uint32_t b)
+{
+    uint32_t h = a;
+#pragma unroll
+    for (int i = 0; i < 4; ++i)
+    {
+        h = h * FNV_PRIME;
+        h ^= (b & 0xFFu);
+        b >>= 8;
+    }
+    return h;
+}
+
+// Keep macro name for existing call sites
+#undef fnv
+#define fnv(x, y) fnv_u32((x), (y))
 
 DEV_INLINE uint4 fnv4(uint4 a, uint4 b)
 {
-    uint4 c;
-    c.x = a.x * FNV_PRIME ^ b.x;
-    c.y = a.y * FNV_PRIME ^ b.y;
-    c.z = a.z * FNV_PRIME ^ b.z;
-    c.w = a.w * FNV_PRIME ^ b.w;
-    return c;
+    uint4 h = a;
+#pragma unroll
+    for (int i = 0; i < 4; ++i)
+    {
+        h.x = h.x * FNV_PRIME;
+        h.y = h.y * FNV_PRIME;
+        h.z = h.z * FNV_PRIME;
+        h.w = h.w * FNV_PRIME;
+
+        h.x ^= (b.x & 0xFFu);
+        h.y ^= (b.y & 0xFFu);
+        h.z ^= (b.z & 0xFFu);
+        h.w ^= (b.w & 0xFFu);
+
+        b.x >>= 8;
+        b.y >>= 8;
+        b.z >>= 8;
+        b.w >>= 8;
+    }
+    return h;
 }
 
 DEV_INLINE uint32_t fnv_reduce(uint4 v)
 {
-    return fnv(fnv(fnv(v.x, v.y), v.z), v.w);
+    uint32_t r = fnv_u32(v.x, v.y);
+    r = fnv_u32(r, v.z);
+    r = fnv_u32(r, v.w);
+    return r;
 }

@@ -16,9 +16,11 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <libparallaxcore/Farm.h>
+#include <libparallaxcore/XHashAux.h>
 #include <xhash/xhash.hpp>
 
 #include "CUDAMiner.h"
+#include "xhash_cuda_miner_kernel.h"
 
 using namespace std;
 using namespace dev;
@@ -412,8 +414,18 @@ void CUDAMiner::search(
                 {
                     uint64_t nonce = nonce_base + gids[i];
 
-                    Farm::f().submitProof(
-                        Solution{nonce, mixes[i], w, std::chrono::steady_clock::now(), m_index});
+                    // Optional runtime verification similar to OpenCL path
+                    auto expected = XHashAux::eval(w.epoch, w.header, nonce);
+                    if (expected.mixHash != mixes[i])
+                    {
+                        cudalog << EthRed << "GPU " << m_index << " incorrect result" << EthReset;
+                        cudalog << EthRed << " header: " << w.header.abridged() << " nonce: 0x" << toHex(nonce)
+                                << " kernel_mix: 0x" << mixes[i].hex() << " cpu_mix: 0x" << expected.mixHash.hex()
+                                << EthReset;
+                    }
+
+                    Farm::f().submitProof(Solution{
+                        nonce, mixes[i], w, std::chrono::steady_clock::now(), m_index});
                     cudalog << EthWhite << "Job: " << w.header.abridged() << " Sol: 0x"
                             << toHex(nonce) << EthReset;
                 }

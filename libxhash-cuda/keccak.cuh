@@ -62,6 +62,7 @@ DEV_INLINE uint2 chi(const uint2 a, const uint2 b, const uint2 c)
 #endif
 }
 
+// Initialize Keccak state for SHA3-512(header||nonce) absorbing 5 lanes (A[0..4]) and SHA3 domain 0x06
 DEV_INLINE void keccak_f1600_init(uint2* state)
 {
     uint2 s[25];
@@ -71,7 +72,8 @@ DEV_INLINE void keccak_f1600_init(uint2* state)
     devectorize2(d_header.uint4s[0], s[0], s[1]);
     devectorize2(d_header.uint4s[1], s[2], s[3]);
     s[4] = state[4];
-    s[5] = make_uint2(1, 0);
+    // SHA3 domain separator 0x06 (Keccak uses 0x01). Place 0x06 at low byte of next lane, and final 0x80 in padding lane
+    s[5] = make_uint2(0x00000006, 0);
     s[6] = u2zero;
     s[7] = u2zero;
     s[8] = make_uint2(0, 0x80000000);
@@ -382,6 +384,7 @@ DEV_INLINE void keccak_f1600_init(uint2* state)
         state[i] = s[i];
 }
 
+// Finalize SHA3-256(state||mix) with proper SHA3 padding applied to lanes starting at s[12]
 DEV_INLINE uint64_t keccak_f1600_final(uint2* state)
 {
     uint2 s[25];
@@ -391,7 +394,8 @@ DEV_INLINE uint64_t keccak_f1600_final(uint2* state)
     for (int i = 0; i < 12; ++i)
         s[i] = state[i];
 
-    s[12] = make_uint2(1, 0);
+    // SHA3 domain padding for the second absorb (mix): 0x06 then 0x80 at the end of the block
+    s[12] = make_uint2(0x00000006, 0);
     s[13] = u2zero;
     s[14] = u2zero;
     s[15] = u2zero;
@@ -656,6 +660,7 @@ DEV_INLINE uint64_t keccak_f1600_final(uint2* state)
     return devectorize(s[0] ^ keccak_round_constants[23]);
 }
 
+// Full SHA3-512 permutation round for DAG generation with SHA3 padding
 DEV_INLINE void SHA3_512(uint2* s)
 {
     uint2 t[5], u, v;
@@ -664,7 +669,8 @@ DEV_INLINE void SHA3_512(uint2* s)
     {
         s[i] = make_uint2(0, 0);
     }
-    s[8].x = 1;
+    // Apply SHA3 domain: 0x06 and final 0x80 marker
+    s[8].x = 0x00000006;
     s[8].y = 0x80000000;
 
     for (int i = 0; i < 23; i++)

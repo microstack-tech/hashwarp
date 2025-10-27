@@ -5,7 +5,8 @@
 #include <stdexcept>
 #include <string>
 
-#include "cuda_runtime.h"
+// Only include CUDA runtime when compiling sources that need it
+#include <cuda_runtime.h>
 
 // It is virtually impossible to get more than
 // one solution per stream hash calculation

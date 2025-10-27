@@ -1,6 +1,5 @@
 version: "{build}"
 
-# Default image; we'll switch to VS2022 for CUDA 13.x in a `for:` block below.
 image: Visual Studio 2019
 
 branches:
@@ -24,55 +23,54 @@ environment:
   HUNTER_CACHE_TOKEN:
     secure: VnpF1MH5MEFvUI5MiMMMFlmbDdst+bfom5ZFVgalYPp/SYDhbejjXJm9Dla/IgpC
 
-# Cache the installer EXEs so we don't re-download every build
 cache:
-  - C:\CUDAInstallers\cuda_9.0.176_win10-exe.exe   -> appveyor.yml
-  - C:\CUDAInstallers\cuda_11.8.0_522.06_windows.exe -> appveyor.yml
-  - C:\CUDAInstallers\cuda_13.0.2_windows.exe      -> appveyor.yml
+  - C:\CUDAInstallers\cuda_9.0.176_win10-exe.exe           -> appveyor.yml
+  - C:\CUDAInstallers\cuda_11.8.0_522.06_windows.exe       -> appveyor.yml
+  - C:\CUDAInstallers\cuda_13.0.2_windows.exe              -> appveyor.yml
 
 install: |
   git submodule update --init --recursive
 
-  :: ----- Map CUDA_VER -> installer filename and URL -----
-  if "%CUDA_VER%"=="9.0"    set "CUDA_ARCHIVE=cuda_9.0.176_win10-exe.exe"    & set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/9.0/Prod/local_installers/%CUDA_ARCHIVE%"
-  if "%CUDA_VER%"=="11.8.0" set "CUDA_ARCHIVE=cuda_11.8.0_522.06_windows.exe" & set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/%CUDA_ARCHIVE%"
-  if "%CUDA_VER%"=="13.0.2" set "CUDA_ARCHIVE=cuda_13.0.2_windows.exe"        & set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/13.0.2/local_installers/%CUDA_ARCHIVE%"
+  rem ----- Map CUDA_VER -> installer filename and URL -----
+  if "%CUDA_VER%"=="9.0"    set "CUDA_ARCHIVE=cuda_9.0.176_win10-exe.exe"
+  if "%CUDA_VER%"=="9.0"    set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/9.0/Prod/local_installers/%CUDA_ARCHIVE%"
+
+  if "%CUDA_VER%"=="11.8.0" set "CUDA_ARCHIVE=cuda_11.8.0_522.06_windows.exe"
+  if "%CUDA_VER%"=="11.8.0" set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/%CUDA_ARCHIVE%"
+
+  if "%CUDA_VER%"=="13.0.2" set "CUDA_ARCHIVE=cuda_13.0.2_windows.exe"
+  if "%CUDA_VER%"=="13.0.2" set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/13.0.2/local_installers/%CUDA_ARCHIVE%"
 
   if not exist "C:\CUDAInstallers" mkdir "C:\CUDAInstallers"
-  if not exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" (
-    echo Downloading %CUDA_ARCHIVE% ...
-    curl -L "%CUDA_URL%" -o "C:\CUDAInstallers\%CUDA_ARCHIVE%"
-  ) else (
-    echo Using cached installer: C:\CUDAInstallers\%CUDA_ARCHIVE%
-  )
+  if exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" echo Using cached installer: C:\CUDAInstallers\%CUDA_ARCHIVE%
+  if not exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" echo Downloading %CUDA_ARCHIVE% ...
+  if not exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" curl -L "%CUDA_URL%" -o "C:\CUDAInstallers\%CUDA_ARCHIVE%"
 
-  :: ----- Silent install Toolkit only (no driver) -----
+  rem ----- Silent install Toolkit only (no driver) -----
   "C:\CUDAInstallers\%CUDA_ARCHIVE%" -s toolkit
 
-  :: ----- Set CUDA_PATH and PATH -----
-  :: NVIDIA installs to ...\CUDA\v<major.minor>\  (e.g. v11.8, v13.0)
+  rem ----- Set CUDA_PATH and PATH -----
   set "CUDA_MAJOR_MINOR=%CUDA_VER:~0,4%"
   set "CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA_MAJOR_MINOR%"
   set "PATH=%CUDA_PATH%\bin;%PATH%"
 
   nvcc -V
 
-  :: Python tools (as in your original)
+  rem Python tools
   set "PATH=C:\Python39-x64;C:\Python39-x64\Scripts;%PATH%"
   pip install --disable-pip-version-check requests gitpython
 
 build_script:
   - cmd: |
-      :: Pick VS toolchain + CMake generator to match the image
-      if "%CUDA_VER%"=="13.0.2" (
-        call "%ProgramFiles%\Microsoft Visual Studio\2022\Community\Common7\Tools\VsMSBuildCmd.bat"
-        set "GEN=Visual Studio 17 2022"
-      ) else (
-        call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\Common7\Tools\VsMSBuildCmd.bat"
-        set "GEN=Visual Studio 16 2019"
-      )
+      rem ----- Choose VS toolchain/generator (no parentheses, no goto) -----
+      set "GEN=Visual Studio 16 2019"
+      set "VC_CMD=%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\Common7\Tools\VsMSBuildCmd.bat"
+      if "%CUDA_VER%"=="13.0.2" set "GEN=Visual Studio 17 2022"
+      if "%CUDA_VER%"=="13.0.2" set "VC_CMD=%ProgramFiles%\Microsoft Visual Studio\2022\Community\Common7\Tools\VsMSBuildCmd.bat"
 
-      set "CMAKE_ARGS=-G \"%GEN%\" -H. -Bbuild -DXHASHCUDA=ON -DAPICORE=ON -DHUNTER_JOBS_NUMBER=%NUMBER_OF_PROCESSORS% -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS%"
+      call "%VC_CMD%"
+
+      set "CMAKE_ARGS=-G \"%GEN\" -H. -Bbuild -DXHASHCUDA=ON -DAPICORE=ON -DHUNTER_JOBS_NUMBER=%NUMBER_OF_PROCESSORS% -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS%"
       cmake %CMAKE_ARGS%
       cmake --build build --config Release --target package
   - ps: |
@@ -83,7 +81,6 @@ artifacts:
   - path: build/hashwarp-*.zip
     name: hashwarp
 
-# Use a newer image for CUDA 13.x, which pairs best with VS2022
 for:
   - matrix:
       only:

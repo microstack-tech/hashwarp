@@ -129,12 +129,20 @@ endif()
 add_subdirectory(hashwarp)
 
 
-if(WIN32)
-  set(CPACK_GENERATOR ZIP)
-else()
+# CPack configuration: produce platform-specific release archives named
+#   - Linux:   hashwarp-v<VERSION>-linux.tar.gz
+#   - Windows: hashwarp-v<VERSION>-windows.zip
+if(UNIX AND NOT APPLE)
   set(CPACK_GENERATOR TGZ)
+  set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}-linux")
+elseif(WIN32)
+  set(CPACK_GENERATOR ZIP)
+  set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}-windows")
+else()
+  # Other platforms fallback
+  set(CPACK_GENERATOR TGZ)
+  set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}")
 endif()
-set(CPACK_PACKAGE_FILE_NAME ${PROJECT_NAME})
 set(CPACK_PACKAGE_CHECKSUM SHA256)
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY FALSE)
 include(CPack)

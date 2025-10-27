@@ -2,6 +2,10 @@
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 cmake_minimum_required(VERSION 3.5...4.1)
 
+if(MSVC)
+  add_compile_definitions(BOOST_ALL_NO_LIB=1)
+endif()
+
 include(cmake/cable/bootstrap.cmake)
 
 include(CableBuildInfo)

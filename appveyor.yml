@@ -48,32 +48,32 @@ install: |
 
   if NOT EXIST C:\CUDA mkdir C:\CUDA
 
-  if EXIST C:\CUDA\v%CUDA_VER% goto have_cuda
+  rem Decide if we need to install CUDA (avoid labels/goto)
+  set DO_CUDA_INSTALL=1
+  if EXIST C:\CUDA\v%CUDA_VER% set DO_CUDA_INSTALL=0
 
   rem Try download installer
-  set CUDA_EXE=cuda_installer.exe
-  if NOT "%CUDA_URL_PRIMARY%"=="" curl -L "%CUDA_URL_PRIMARY%" -o %CUDA_EXE%
+  if "%DO_CUDA_INSTALL%"=="1" set CUDA_EXE=cuda_installer.exe
+  if "%DO_CUDA_INSTALL%"=="1" if NOT "%CUDA_URL_PRIMARY%"=="" curl -L "%CUDA_URL_PRIMARY%" -o %CUDA_EXE%
 
-  if NOT EXIST %CUDA_EXE% goto have_cuda
+  if "%DO_CUDA_INSTALL%"=="1" if NOT EXIST %CUDA_EXE% set DO_CUDA_INSTALL=0
 
   rem Extract minimal components
-  7z x %CUDA_EXE% -oC:\CUDA\tmp -y
-  if errorlevel 1 echo 7z extraction failed & exit /b 1
+  if "%DO_CUDA_INSTALL%"=="1" 7z x %CUDA_EXE% -oC:\CUDA\tmp -y
+  if "%DO_CUDA_INSTALL%"=="1" if errorlevel 1 echo 7z extraction failed & exit /b 1
 
   rem Common layout: extract include, lib, bin
-  mkdir C:\CUDA\v%CUDA_VER%\include
-  mkdir C:\CUDA\v%CUDA_VER%\lib\x64
-  mkdir C:\CUDA\v%CUDA_VER%\bin
+  if "%DO_CUDA_INSTALL%"=="1" mkdir C:\CUDA\v%CUDA_VER%\include
+  if "%DO_CUDA_INSTALL%"=="1" mkdir C:\CUDA\v%CUDA_VER%\lib\x64
+  if "%DO_CUDA_INSTALL%"=="1" mkdir C:\CUDA\v%CUDA_VER%\bin
 
   rem Copy from cuda_windows* if present (no labels)
-  if EXIST C:\CUDA\tmp\cuda_windows* for /d %%D in (C:\CUDA\tmp\cuda_windows*) do if EXIST "%%D\include" xcopy /e /i /y "%%D\include" C:\CUDA\v%CUDA_VER%\include\ & if EXIST "%%D\lib\x64" xcopy /e /i /y "%%D\lib\x64" C:\CUDA\v%CUDA_VER%\lib\x64\ & if EXIST "%%D\bin" xcopy /e /i /y "%%D\bin" C:\CUDA\v%CUDA_VER%\bin\
+  if "%DO_CUDA_INSTALL%"=="1" if EXIST C:\CUDA\tmp\cuda_windows* for /d %%D in (C:\CUDA\tmp\cuda_windows*) do if EXIST "%%D\include" xcopy /e /i /y "%%D\include" C:\CUDA\v%CUDA_VER%\include\ & if EXIST "%%D\lib\x64" xcopy /e /i /y "%%D\lib\x64" C:\CUDA\v%CUDA_VER%\lib\x64\ & if EXIST "%%D\bin" xcopy /e /i /y "%%D\bin" C:\CUDA\v%CUDA_VER%\bin\
 
   rem Copy from packages if present (no labels)
-  if EXIST C:\CUDA\tmp\packages for /d %%P in (C:\CUDA\tmp\packages\cuda_visual_studio_integration* C:\CUDA\tmp\packages\cuda_runtime* C:\CUDA\tmp\packages\nvcc* C:\CUDA\tmp\packages\nvrtc*) do for /d %%D in ("%%P\*\") do if EXIST "%%D\include" xcopy /e /i /y "%%D\include" C:\CUDA\v%CUDA_VER%\include\ & if EXIST "%%D\lib\x64" xcopy /e /i /y "%%D\lib\x64" C:\CUDA\v%CUDA_VER%\lib\x64\ & if EXIST "%%D\bin" xcopy /e /i /y "%%D\bin" C:\CUDA\v%CUDA_VER%\bin\
+  if "%DO_CUDA_INSTALL%"=="1" if EXIST C:\CUDA\tmp\packages for /d %%P in (C:\CUDA\tmp\packages\cuda_visual_studio_integration* C:\CUDA\tmp\packages\cuda_runtime* C:\CUDA\tmp\packages\nvcc* C:\CUDA\tmp\packages\nvrtc*) do for /d %%D in ("%%P\*\") do if EXIST "%%D\include" xcopy /e /i /y "%%D\include" C:\CUDA\v%CUDA_VER%\include\ & if EXIST "%%D\lib\x64" xcopy /e /i /y "%%D\lib\x64" C:\CUDA\v%CUDA_VER%\lib\x64\ & if EXIST "%%D\bin" xcopy /e /i /y "%%D\bin" C:\CUDA\v%CUDA_VER%\bin\
 
-  if EXIST C:\CUDA\tmp rmdir /s /q C:\CUDA\tmp
-
-  :have_cuda
+  if "%DO_CUDA_INSTALL%"=="1" if EXIST C:\CUDA\tmp rmdir /s /q C:\CUDA\tmp
 
   set CUDA_PATH=C:\CUDA\v%CUDA_VER%
   set CUDAToolkit_ROOT=C:\CUDA\v%CUDA_VER%

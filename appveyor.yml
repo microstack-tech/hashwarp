@@ -7,28 +7,85 @@ branches:
     - appveyor
     - hunter
 clone_depth: 100
-os: "Visual Studio 2017"
+os: Visual Studio 2019
+
 environment:
   matrix:
-    - OPEN_CL: "yes"
+    # Legacy coverage
+    - CUDA_VER: "9.1"
+      XHASH_CUDA_ARCHS: "52;60;61;70"
+    - CUDA_VER: "10.0"
+      XHASH_CUDA_ARCHS: "52;60;61;70;75"
+    # Modern coverage
+    - CUDA_VER: "11.8"
+      XHASH_CUDA_ARCHS: "70;75;80;86;89"
+    - CUDA_VER: "12.3"
+      XHASH_CUDA_ARCHS: "75;80;86;89"
   HUNTER_CACHE_TOKEN:
     secure: VnpF1MH5MEFvUI5MiMMMFlmbDdst+bfom5ZFVgalYPp/SYDhbejjXJm9Dla/IgpC
 
-# Download CUDA Windows installer (local) and extract /compiler/* to /CUDA/vX.0/ zip archive.
+cache:
+  - C:\CUDA\v9.1 -> appveyor.yml
+  - C:\CUDA\v10.0 -> appveyor.yml
+  - C:\CUDA\v11.8 -> appveyor.yml
+  - C:\CUDA\v12.3 -> appveyor.yml
+
 install: |
   git submodule update --init --recursive
 
-  set PATH=C:\Python36-x64;C:\Python36-x64\Scripts;%PATH%
+  set PATH=C:\Python39-x64;C:\Python39-x64\Scripts;%PATH%
   pip install requests gitpython
 
+  rem Fetch and extract minimal CUDA Toolkit per version (include, lib, bin, nvrtc/nvcc)
+  if "%CUDA_VER%" == "9.1" set CUDA_ARCHIVE=cuda_9.1.85_windows
+  if "%CUDA_VER%" == "10.0" set CUDA_ARCHIVE=cuda_10.0.130_411.31_windows
+  if "%CUDA_VER%" == "11.8" set CUDA_ARCHIVE=cuda_11.8.0_windows_network
+  if "%CUDA_VER%" == "12.3" set CUDA_ARCHIVE=cuda_12.3.0_windows_network
+
+  if NOT EXIST C:\CUDA mkdir C:\CUDA
+  if NOT EXIST C:\CUDA\v%CUDA_VER% (
+    curl -L https://developer.nvidia.com/compute/cuda/%CUDA_VER%/local_installers/%CUDA_ARCHIVE>.exe -o %CUDA_ARCHIVE%.exe || curl -L https://developer.download.nvidia.com/compute/cuda/%CUDA_VER%/local_installers/%CUDA_ARCHIVE>.exe -o %CUDA_ARCHIVE%.exe
+  )
+  if NOT EXIST C:\CUDA\v%CUDA_VER% (
+    7z x %CUDA_ARCHIVE%.exe -oC:\CUDA\tmp -y
+    rem Common layout: extract include, lib, bin, nvcc/nvrtc components into C:\CUDA\vX.Y
+    mkdir C:\CUDA\v%CUDA_VER%\include
+    mkdir C:\CUDA\v%CUDA_VER%\lib\x64
+    mkdir C:\CUDA\v%CUDA_VER%\bin
+    if EXIST C:\CUDA\tmp\cuda_windows* (
+      for /d %%D in (C:\CUDA\tmp\cuda_windows*) do (
+        xcopy /e /i /y "%%D\include" C:\CUDA\v%CUDA_VER%\include\
+        xcopy /e /i /y "%%D\lib\x64" C:\CUDA\v%CUDA_VER%\lib\x64\
+        xcopy /e /i /y "%%D\bin" C:\CUDA\v%CUDA_VER%\bin\
+      )
+    )
+    if EXIST C:\CUDA\tmp\packages (
+      rem Newer installers: packages subfolders
+      for /d %%P in (C:\CUDA\tmp\packages\cuda_visual_studio_integration* C:\CUDA\tmp\packages\cuda_runtime* C:\CUDA\tmp\packages\nvcc* C:\CUDA\tmp\packages\nvrtc*) do (
+        for /d %%D in ("%%P\*\") do (
+          if EXIST "%%D\include" xcopy /e /i /y "%%D\include" C:\CUDA\v%CUDA_VER%\include\
+          if EXIST "%%D\lib\x64" xcopy /e /i /y "%%D\lib\x64" C:\CUDA\v%CUDA_VER%\lib\x64\
+          if EXIST "%%D\bin" xcopy /e /i /y "%%D\bin" C:\CUDA\v%CUDA_VER%\bin\
+        )
+      )
+    )
+    rmdir /s /q C:\CUDA\tmp
+  )
+
+  set CUDA_PATH=C:\CUDA\v%CUDA_VER%
+  set CUDAToolkit_ROOT=C:\CUDA\v%CUDA_VER%
+  set PATH=%CUDA_PATH%\bin;%PATH%
+  nvcc -V || echo "nvcc not found in PATH; build will rely on CUDAToolkit headers+libs only"
+
 build_script:
-  - call "%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Community\Common7\Tools\VsMSBuildCmd.bat"
-  - set CMAKE_ARGS=-G "Visual Studio 15 2017 Win64" -H. -Bbuild -DHUNTER_JOBS_NUMBER=%NUMBER_OF_PROCESSORS%
+  - call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\Common7\Tools\VsMSBuildCmd.bat"
+  - set GEN=Visual Studio 16 2019
+  - set CMAKE_ARGS=-G "%GEN%" -H. -Bbuild -DXHASHCUDA=ON -DAPICORE=ON -DHUNTER_JOBS_NUMBER=%NUMBER_OF_PROCESSORS% -DCUDAToolkit_ROOT=%CUDAToolkit_ROOT% -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS%
   - cmake %CMAKE_ARGS%
   - cmake --build build --config Release --target package
   - ps: |
       . build/hashwarp/buildinfo.ps1
-      mv build/hashwarp.zip build/$env:project_name-$env:system_name-$env:system_processor.zip
+      mv build/hashwarp.zip build/$env:project_name-$env:project_version-cuda$env:CUDA_VER-$env:system_name-$env:system_processor.zip
 
 artifacts:
   - path: build/hashwarp-*.zip

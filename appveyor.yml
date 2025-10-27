@@ -17,11 +17,7 @@ clone_depth: 100
 
 environment:
   matrix:
-    # Shared CUDA params (Windows uses them; Linux job ignores)
     - CUDA_VER: "12.2.2"
-      # Pascal (60,61,62), Volta (70,72), Turing (75), Ampere (80,86,87),
-      # Ada (89), Hopper (90) — all supported by CUDA 12.2
-      XHASH_CUDA_ARCHS: "60;61;62;70;72;75;80;86;87;89;90"
   HUNTER_CACHE_TOKEN:
     secure: VnpF1MH5MEFvUI5MiMMMFlmbDdst+bfom5ZFVgalYPp/SYDhbejjXJm9Dla/IgpC
 
@@ -55,6 +51,8 @@ for:
       set "CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA_MAJOR_MINOR%"
       set "PATH=%CUDA_PATH%\bin;%PATH%"
 
+      dir "%CUDA_PATH%\*" /s /b | findstr /i CUDAToolkitConfig.cmake
+
       nvcc -V
 
       rem Python tools
@@ -63,7 +61,7 @@ for:
 
     build_script:
       - call "%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Community\Common7\Tools\VsMSBuildCmd.bat"
-      - set CMAKE_ARGS=-G "Visual Studio 15 2017 Win64" -H. -Bbuild -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS% -DHUNTER_JOBS_NUMBER=%NUMBER_OF_PROCESSORS% -DCUDAToolkit_ROOT="%CUDA_PATH%"
+      - set CMAKE_ARGS=-G "Visual Studio 15 2017 Win64" -H. -Bbuild -DHUNTER_JOBS_NUMBER=%NUMBER_OF_PROCESSORS% -DCUDAToolkit_DIR="%CUDA_PATH%\lib64\cmake\cudatoolkit"
       - cmake %CMAKE_ARGS%
       - cmake --build build --config Release --target package
       - ps: |
@@ -101,8 +99,7 @@ for:
       # Configure
       cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
-        -DHUNTER_JOBS_NUMBER=$(nproc) \
-        -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS%
+        -DHUNTER_JOBS_NUMBER=$(nproc)
 
       cmake --build build --target package -j"$(nproc)"
 

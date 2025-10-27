@@ -57,30 +57,34 @@ install: |
   if NOT EXIST %CUDA_EXE% goto have_cuda
 
   rem Extract minimal components
-  7z x %CUDA_EXE% -oC:\CUDA\tmp -y || (echo 7z extraction failed & exit /b 1)
+  7z x %CUDA_EXE% -oC:\CUDA\tmp -y
+  if errorlevel 1 echo 7z extraction failed & exit /b 1
 
   rem Common layout: extract include, lib, bin
   mkdir C:\CUDA\v%CUDA_VER%\include
   mkdir C:\CUDA\v%CUDA_VER%\lib\x64
   mkdir C:\CUDA\v%CUDA_VER%\bin
 
-  if EXIST C:\CUDA\tmp\cuda_windows* (
-    for /d %%D in (C:\CUDA\tmp\cuda_windows*) do (
-      xcopy /e /i /y "%%D\include" C:\CUDA\v%CUDA_VER%\include\
-      xcopy /e /i /y "%%D\lib\x64" C:\CUDA\v%CUDA_VER%\lib\x64\
-      xcopy /e /i /y "%%D\bin" C:\CUDA\v%CUDA_VER%\bin\
-    )
-  )
+  rem Copy from cuda_windows* if present
+  if NOT EXIST C:\CUDA\tmp\cuda_windows* goto skip_cuda_windows
+  for /d %%D in (C:\CUDA\tmp\cuda_windows*) do call :copyCudaTree "%%D"
+  :skip_cuda_windows
 
-  if EXIST C:\CUDA\tmp\packages (
-    for /d %%P in (C:\CUDA\tmp\packages\cuda_visual_studio_integration* C:\CUDA\tmp\packages\cuda_runtime* C:\CUDA\tmp\packages\nvcc* C:\CUDA\tmp\packages\nvrtc*) do (
-      for /d %%D in ("%%P\*\") do (
-        if EXIST "%%D\include" xcopy /e /i /y "%%D\include" C:\CUDA\v%CUDA_VER%\include\
-        if EXIST "%%D\lib\x64" xcopy /e /i /y "%%D\lib\x64" C:\CUDA\v%CUDA_VER%\lib\x64\
-        if EXIST "%%D\bin" xcopy /e /i /y "%%D\bin" C:\CUDA\v%CUDA_VER%\bin\
-      )
-    )
-  )
+  rem Copy from packages if present
+  if NOT EXIST C:\CUDA\tmp\packages goto skip_packages
+  for /d %%P in (C:\CUDA\tmp\packages\cuda_visual_studio_integration* C:\CUDA\tmp\packages\cuda_runtime* C:\CUDA\tmp\packages\nvcc* C:\CUDA\tmp\packages\nvrtc*) do for /d %%D in ("%%P\*\") do call :copyCudaTree "%%D"
+  :skip_packages
+
+  goto after_copy
+
+  :copyCudaTree
+  set "SRC=%~1"
+  if EXIST "%SRC%\include" xcopy /e /i /y "%SRC%\include" C:\CUDA\v%CUDA_VER%\include\
+  if EXIST "%SRC%\lib\x64" xcopy /e /i /y "%SRC%\lib\x64" C:\CUDA\v%CUDA_VER%\lib\x64\
+  if EXIST "%SRC%\bin" xcopy /e /i /y "%SRC%\bin" C:\CUDA\v%CUDA_VER%\bin\
+  goto :eof
+
+  :after_copy
 
   if EXIST C:\CUDA\tmp rmdir /s /q C:\CUDA\tmp
 

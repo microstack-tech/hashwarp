@@ -14,35 +14,30 @@ clone_depth: 100
 
 environment:
   matrix:
-    - CUDA_VER: "11.8.0"
-      XHASH_CUDA_ARCHS: "70;75;80;86;89"
-    - CUDA_VER: "13.0.2"
-      XHASH_CUDA_ARCHS: "80;86;89;90"
+    - CUDA_VER: "12.2.2"
+      # Pascal (60,61,62), Volta (70,72), Turing (75), Ampere (80,86,87),
+      # Ada (89), Hopper (90) — all supported by CUDA 12.2
+      XHASH_CUDA_ARCHS: "60;61;62;70;72;75;80;86;87;89;90"
   HUNTER_CACHE_TOKEN:
     secure: VnpF1MH5MEFvUI5MiMMMFlmbDdst+bfom5ZFVgalYPp/SYDhbejjXJm9Dla/IgpC
 
 cache:
-  - C:\CUDAInstallers\cuda_11.8.0_522.06_windows.exe -> appveyor.yml
-  - C:\CUDAInstallers\cuda_13.0.2_windows.exe        -> appveyor.yml
+  - C:\CUDAInstallers\cuda_12.2.2_537.13_windows.exe -> appveyor.yml
 
 install: |
   git submodule update --init --recursive
 
   rem ----- Map CUDA_VER -> installer filename/URL and subpackages -----
-  if "%CUDA_VER%"=="11.8.0" set "CUDA_ARCHIVE=cuda_11.8.0_522.06_windows.exe"
-  if "%CUDA_VER%"=="11.8.0" set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/%CUDA_ARCHIVE%"
-  if "%CUDA_VER%"=="11.8.0" set "CUDA_SUBPKGS=nvcc_11.8 cudart_11.8 nvrtc_11.8 nvrtc_dev_11.8 visual_studio_integration_11.8"
-
-  if "%CUDA_VER%"=="13.0.2" set "CUDA_ARCHIVE=cuda_13.0.2_windows.exe"
-  if "%CUDA_VER%"=="13.0.2" set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/13.0.2/local_installers/%CUDA_ARCHIVE%"
-  if "%CUDA_VER%"=="13.0.2" set "CUDA_SUBPKGS=nvcc_13.0 cudart_13.0 nvrtc_13.0 nvrtc_dev_13.0 visual_studio_integration_13.0"
+  if "%CUDA_VER%"=="12.2.2" set "CUDA_ARCHIVE=cuda_12.2.2_537.13_windows.exe"
+  if "%CUDA_VER%"=="12.2.2" set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/12.2.2/local_installers/%CUDA_ARCHIVE%"
+  if "%CUDA_VER%"=="12.2.2" set "CUDA_SUBPKGS=nvcc_12.2 cudart_12.2 nvrtc_12.2 nvrtc_dev_12.2 nsight_vse_12.2 visual_studio_integration_12.2"
 
   if not exist "C:\CUDAInstallers" mkdir "C:\CUDAInstallers"
   if exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" echo Using cached installer: C:\CUDAInstallers\%CUDA_ARCHIVE%
   if not exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" echo Downloading %CUDA_ARCHIVE% ...
   if not exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" curl -L "%CUDA_URL%" -o "C:\CUDAInstallers\%CUDA_ARCHIVE%"
 
-  rem ----- Silent install (outer EXE) only needed subpackages, no reboot -----
+  rem ----- Silent install (outer EXE): only needed subpackages, no reboot -----
   "C:\CUDAInstallers\%CUDA_ARCHIVE%" -s %CUDA_SUBPKGS% -n
 
   rem ----- Set CUDA_PATH and PATH -----
@@ -57,18 +52,10 @@ install: |
   pip install --disable-pip-version-check requests gitpython
 
 build_script:
-  - cmd: |
-      rem Pick VS toolchain/generator, simple IF overrides (no parens/goto)
-      set "GEN=Visual Studio 16 2019"
-      set "VC_CMD=%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\Common7\Tools\VsMSBuildCmd.bat"
-      if "%CUDA_VER%"=="13.0.2" set "GEN=Visual Studio 17 2022"
-      if "%CUDA_VER%"=="13.0.2" set "VC_CMD=%ProgramFiles%\Microsoft Visual Studio\2022\Community\Common7\Tools\VsMSBuildCmd.bat"
-
-      call "%VC_CMD%"
-
-      set "CMAKE_ARGS=-G \"%GEN\" -H. -Bbuild -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS%"
-      cmake %CMAKE_ARGS%
-      cmake --build build --config Release --target package
+  - call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\Common7\Tools\VsMSBuildCmd.bat"
+  - set CMAKE_ARGS=-G "Visual Studio 16 2019" -H. -Bbuild -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS% -DHUNTER_JOBS_NUMBER=%NUMBER_OF_PROCESSORS%
+  - cmake %CMAKE_ARGS%
+  - cmake --build build --config Release --target package
   - ps: |
       . build/hashwarp/buildinfo.ps1
       mv build/hashwarp.zip build/$env:project_name-$env:project_version-cuda$env:CUDA_VER-$env:system_name-$env:system_processor.zip
@@ -76,9 +63,3 @@ build_script:
 artifacts:
   - path: build/hashwarp-*.zip
     name: hashwarp
-
-for:
-  - matrix:
-      only:
-        - CUDA_VER: "13.0.2"
-    image: Visual Studio 2022

@@ -22,31 +22,28 @@ environment:
     secure: VnpF1MH5MEFvUI5MiMMMFlmbDdst+bfom5ZFVgalYPp/SYDhbejjXJm9Dla/IgpC
 
 cache:
-  - C:\CUDAInstallers\cuda_11.8.0_522.06_windows.exe       -> appveyor.yml
-  - C:\CUDAInstallers\cuda_13.0.2_windows.exe              -> appveyor.yml
+  - C:\CUDAInstallers\cuda_11.8.0_522.06_windows.exe -> appveyor.yml
+  - C:\CUDAInstallers\cuda_13.0.2_windows.exe        -> appveyor.yml
 
 install: |
   git submodule update --init --recursive
 
-  rem ----- Map CUDA_VER -> installer filename and URL -----
+  rem ----- Map CUDA_VER -> installer filename/URL and subpackages -----
   if "%CUDA_VER%"=="11.8.0" set "CUDA_ARCHIVE=cuda_11.8.0_522.06_windows.exe"
   if "%CUDA_VER%"=="11.8.0" set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/%CUDA_ARCHIVE%"
+  if "%CUDA_VER%"=="11.8.0" set "CUDA_SUBPKGS=nvcc_11.8 cudart_11.8 nvrtc_11.8 nvrtc_dev_11.8 visual_studio_integration_11.8"
 
   if "%CUDA_VER%"=="13.0.2" set "CUDA_ARCHIVE=cuda_13.0.2_windows.exe"
   if "%CUDA_VER%"=="13.0.2" set "CUDA_URL=https://developer.download.nvidia.com/compute/cuda/13.0.2/local_installers/%CUDA_ARCHIVE%"
+  if "%CUDA_VER%"=="13.0.2" set "CUDA_SUBPKGS=nvcc_13.0 cudart_13.0 nvrtc_13.0 nvrtc_dev_13.0 visual_studio_integration_13.0"
 
   if not exist "C:\CUDAInstallers" mkdir "C:\CUDAInstallers"
   if exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" echo Using cached installer: C:\CUDAInstallers\%CUDA_ARCHIVE%
   if not exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" echo Downloading %CUDA_ARCHIVE% ...
   if not exist "C:\CUDAInstallers\%CUDA_ARCHIVE%" curl -L "%CUDA_URL%" -o "C:\CUDAInstallers\%CUDA_ARCHIVE%"
 
-  rem ----- Workaround: extract the SFX and run setup.exe -----
-  set "CUDA_EXTRACT=C:\CUDAExtract\%CUDA_VER%"
-  if not exist "%CUDA_EXTRACT%" mkdir "%CUDA_EXTRACT%"
-  7z x "C:\CUDAInstallers\%CUDA_ARCHIVE%" -o"%CUDA_EXTRACT%" -y
-
-  rem ----- Silent install Toolkit only (no driver) -----
-  "%CUDA_EXTRACT%\setup.exe" -s toolkit
+  rem ----- Silent install (outer EXE) only needed subpackages, no reboot -----
+  "C:\CUDAInstallers\%CUDA_ARCHIVE%" -s %CUDA_SUBPKGS% -n
 
   rem ----- Set CUDA_PATH and PATH -----
   set "CUDA_MAJOR_MINOR=%CUDA_VER:~0,4%"
@@ -61,7 +58,7 @@ install: |
 
 build_script:
   - cmd: |
-      rem ----- Choose VS toolchain/generator (no parentheses, no goto) -----
+      rem Pick VS toolchain/generator, simple IF overrides (no parens/goto)
       set "GEN=Visual Studio 16 2019"
       set "VC_CMD=%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\Common7\Tools\VsMSBuildCmd.bat"
       if "%CUDA_VER%"=="13.0.2" set "GEN=Visual Studio 17 2022"

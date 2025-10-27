@@ -44,10 +44,17 @@ install: |
 
   if NOT EXIST C:\CUDA mkdir C:\CUDA
   if NOT EXIST C:\CUDA\v%CUDA_VER% (
-    curl -L https://developer.nvidia.com/compute/cuda/%CUDA_VER%/local_installers/%CUDA_ARCHIVE>.exe -o %CUDA_ARCHIVE%.exe || curl -L https://developer.download.nvidia.com/compute/cuda/%CUDA_VER%/local_installers/%CUDA_ARCHIVE>.exe -o %CUDA_ARCHIVE%.exe
+    curl -L "https://developer.nvidia.com/compute/cuda/%CUDA_VER%/local_installers/%CUDA_ARCHIVE%.exe" -o %CUDA_ARCHIVE%.exe || curl -L "https://developer.download.nvidia.com/compute/cuda/%CUDA_VER%/local_installers/%CUDA_ARCHIVE%.exe" -o %CUDA_ARCHIVE%.exe
   )
   if NOT EXIST C:\CUDA\v%CUDA_VER% (
-    7z x %CUDA_ARCHIVE%.exe -oC:\CUDA\tmp -y
+    if NOT EXIST %CUDA_ARCHIVE%.exe (
+      echo "CUDA installer not found and download may have failed. Proceeding to try extraction only if present." 
+    )
+    if EXIST %CUDA_ARCHIVE%.exe (
+      7z x %CUDA_ARCHIVE%.exe -oC:\CUDA\tmp -y || (echo 7z extraction failed & exit /b 1)
+    ) else (
+      echo "Skipping extraction because installer is unavailable. Assuming image has CUDA files preinstalled."
+    )
     rem Common layout: extract include, lib, bin, nvcc/nvrtc components into C:\CUDA\vX.Y
     mkdir C:\CUDA\v%CUDA_VER%\include
     mkdir C:\CUDA\v%CUDA_VER%\lib\x64
@@ -69,7 +76,7 @@ install: |
         )
       )
     )
-    rmdir /s /q C:\CUDA\tmp
+    if EXIST C:\CUDA\tmp rmdir /s /q C:\CUDA\tmp
   )
 
   set CUDA_PATH=C:\CUDA\v%CUDA_VER%

@@ -3,16 +3,15 @@
 ## Table of Contents
 
 * [Requirements](#requirements)
-    * [Common](#common)
-    * [Linux](#linux)
-        * [OpenCL support on Linux](#opencl-support-on-linux)
-    * [macOS](#macos)
-    * [Windows](#windows)
+  * [Common](#common)
+  * [Linux](#linux)
+    * [OpenCL support on Linux](#opencl-support-on-linux)
+  * [macOS](#macos)
+  * [Windows](#windows)
 * [CMake configuration options](#cmake-configuration-options)
 * [Disable Hunter](#disable-hunter)
 * [Instructions](#instructions)
-    * [Windows-specific script](#windows-specific-script)
-
+  * [Windows-specific script](#windows-specific-script)
 
 ## Requirements
 
@@ -29,6 +28,7 @@ This project uses [CMake] and [Hunter] package manager.
 
 1. GCC version >= 4.8, tested on GCC compiler 7.5.0
 2. CMake version 3.21.5
+
 ``` shell
 wget https://github.com/Kitware/CMake/releases/download/v3.21.5/cmake-3.21.5.tar.gz
 tar -zxvf cmake-3.21.5.tar.gz
@@ -37,6 +37,7 @@ cd cmake-3.21.5
 make
 sudo make install
 ```
+
 3. DBUS development libs if building with `-DETHDBUS`. E.g. on Ubuntu run:
 
 ```shell
@@ -102,10 +103,13 @@ If you want to use locally installed [ROCm-OpenCL](https://rocmdocs.amd.com/en/l
     ```shell
     cmake --build . --config Release
     ```
+
 5. Generate the executable
+
     ```shell
     make all
     ```
+
     will find the executable in **hashwarp/hashwarp** in the **build** directory
 6. _(Optional, Linux only)_ Install the built executable:
 
@@ -137,7 +141,6 @@ cd "%~dp0\hashwarp\"
 
 if not exist "build\" mkdir "build\"
 
-rem For CUDA 9.x pass also `-T v140`
 cmake -G "Visual Studio 15 2017 Win64" -H. -Bbuild -DXHASHCL=ON -DXHASHCUDA=ON -DAPICORE=ON ..
 cmake --build . --config Release --target package
 
@@ -165,7 +168,6 @@ cmake .. -DXHASHCUDA=ON -DXHASHCL=OFF
 If you want to install dependencies yourself or use system package manager you can disable Hunter by adding
 [`-DHUNTER_ENABLED=OFF`](https://docs.hunter.sh/en/latest/reference/user-variables.html#hunter-enabled)
 to the configuration options.
-
 
 [CMake]: https://cmake.org/
 [CMake Build Tool Mode]: https://cmake.org/cmake/help/latest/manual/cmake.1.html#build-tool-mode

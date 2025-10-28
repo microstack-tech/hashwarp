@@ -34,27 +34,40 @@ for:
   - matrix:
       only:
         - image: Ubuntu2204
-    # OpenCL-only build on Linux (no CUDA toolkits or GPUs on CI runners)
+    # OpenCL + CUDA toolkit build on Linux (no GPU needed on CI)
     install: |
       set -e
+      export DEBIAN_FRONTEND=noninteractive
       git submodule update --init --recursive
-      sudo apt-get update
+      sudo apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=30
       sudo apt-get install -y --no-install-recommends \
         build-essential cmake ninja-build git \
         ocl-icd-opencl-dev opencl-headers clinfo \
-        python3 python3-pip
+        python3 python3-pip ca-certificates wget gnupg libtinfo5
 
       python3 -m pip install --disable-pip-version-check --user requests gitpython
 
       echo "OpenCL platforms (sanity check):"
       clinfo | sed -n '1,80p' || true
 
-      CUDA_VER=12.2.2
-      CUDA_RUN=cuda_12.2.2_535.104.05_linux.run
-      wget https://developer.download.nvidia.com/compute/cuda/12.2.2/local_installers/${CUDA_RUN}
-      sudo sh ${CUDA_RUN} --silent --toolkit
-      export PATH=/usr/local/cuda-12.2/bin:$PATH
-      export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64:$LD_LIBRARY_PATH
+      # --- Pin CUDA 12.2.2 via local deb repository (no driver) ---
+      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+      sudo mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
+      wget https://developer.download.nvidia.com/compute/cuda/12.2.2/local_installers/cuda-repo-ubuntu2204-12-2-local_12.2.2-535.104.05-1_amd64.deb
+      sudo dpkg -i cuda-repo-ubuntu2204-12-2-local_12.2.2-535.104.05-1_amd64.deb
+      # add repo key for the local repo
+      sudo cp /var/cuda-repo-ubuntu2204-12-2-local/cuda-*-keyring.gpg /usr/share/keyrings/
+      sudo apt-get update
+      # install just the toolkit (headers, nvcc, libs) – no GPU driver
+      sudo apt-get install -y --no-install-recommends cuda-toolkit-12-2
+
+      # env for CMake/FindCUDAToolkit
+      export CUDA_HOME=/usr/local/cuda-12.2
+      export PATH=$CUDA_HOME/bin:$PATH
+      export LD_LIBRARY_PATH=$CUDA_HOME/lib64:${LD_LIBRARY_PATH:-}
+      sudo ln -sfn "$CUDA_HOME" /usr/local/cuda  # common fallback path
+      echo "nvcc version:"
+      nvcc -V || true
 
     build_script: |
       set -e
@@ -62,7 +75,7 @@ for:
       cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DHUNTER_JOBS_NUMBER=$(nproc) \
-        -DXHASH_CUDA_ARCHS=%XHASH_CUDA_ARCHS%
+        -DXHASH_CUDA_ARCHS="$XHASH_CUDA_ARCHS"
 
       cmake --build build --target package -j"$(nproc)"
 
@@ -107,8 +120,6 @@ for:
       set "CUDA_MAJOR_MINOR=%CUDA_VER:~0,4%"
       set "CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA_MAJOR_MINOR%"
       set "PATH=%CUDA_PATH%\bin;%PATH%"
-
-      dir "%CUDA_PATH%\*" /s /b | findstr /i CUDAToolkitConfig.cmake
 
       nvcc -V
 

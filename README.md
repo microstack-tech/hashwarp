@@ -11,26 +11,24 @@
 ## Features
 
 * OpenCL mining
-* Nvidia CUDA mining (TBD)
+* Nvidia CUDA mining
 * realistic benchmarking against arbitrary epoch/DAG/blocknumber
 * on-GPU DAG generation (no more DAG files on disk)
 * stratum mining without proxy
 * OpenCL devices picking
 * farm failover (getwork + stratum)
 
-
 ## Table of Contents
 
 * [Install](#install)
 * [Usage](#usage)
-    * [Examples connecting to pools](#examples-connecting-to-pools)
+  * [Examples connecting to pools](#examples-connecting-to-pools)
 * [Build](#build)
-    * [Continuous Integration and development builds](#continuous-integration-and-development-builds)
-    * [Building from source](#building-from-source)
+  * [Continuous Integration and development builds](#continuous-integration-and-development-builds)
+  * [Building from source](#building-from-source)
 * [Maintainers & Authors](#maintainers--authors)
 * [Contribute](#contribute)
 * [F.A.Q.](#faq)
-
 
 ## Install
 
@@ -45,7 +43,6 @@ accessible from command line. The ethminer is ready to go.
 | ------ | ------- | ---- |
 | Last   | [![GitHub release](https://img.shields.io/github/release/microstack-tech/hashwarp/all.svg)](https://github.com/microstack-tech/hashwarp/releases) | [![GitHub Release Date](https://img.shields.io/github/release-date-pre/microstack-tech/hashwarp.svg)](https://github.com/microstack-tech/hashwarp/releases) |
 | Stable | [![GitHub release](https://img.shields.io/github/release/microstack-tech/hashwarp.svg)](https://github.com/microstack-tech/hashwarp/releases/latest) | [![GitHub Release Date](https://img.shields.io/github/release-date/microstack-tech/hashwarp.svg)](https://github.com/microstack-tech/hashwarp/releases/latest) |
-
 
 ## Usage
 
@@ -79,11 +76,9 @@ To download the .exe on a build under `Job name` select the CUDA version you use
 
 See [docs/BUILD.md](docs/BUILD.md) for build/compilation details.
 
-
 ## License
 
 Licensed under the [GNU General Public License, Version 3](LICENSE).
-
 
 ## F.A.Q
 
@@ -124,12 +119,12 @@ To prevent some unwanted changes in the order of your CUDA devices you **might s
 This can be done with one of the 2 ways:
 
 * Linux:
-    * Adapt the `/etc/environment` file and add a line `CUDA_DEVICE_ORDER=PCI_BUS_ID`
-    * Adapt your start script launching hashwarp and add a line `export CUDA_DEVICE_ORDER=PCI_BUS_ID`
+  * Adapt the `/etc/environment` file and add a line `CUDA_DEVICE_ORDER=PCI_BUS_ID`
+  * Adapt your start script launching hashwarp and add a line `export CUDA_DEVICE_ORDER=PCI_BUS_ID`
 
 * Windows:
-    * Adapt your environment using the control panel (just search `setting environment windows control panel` using your favorite search engine)
-    * Adapt your start (.bat) file launching hashwarp and add a line `set CUDA_DEVICE_ORDER=PCI_BUS_ID` or `setx CUDA_DEVICE_ORDER PCI_BUS_ID`. For more info about `set` see [here](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/set_1), for more info about `setx` see [here](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/setx)
+  * Adapt your environment using the control panel (just search `setting environment windows control panel` using your favorite search engine)
+  * Adapt your start (.bat) file launching hashwarp and add a line `set CUDA_DEVICE_ORDER=PCI_BUS_ID` or `setx CUDA_DEVICE_ORDER PCI_BUS_ID`. For more info about `set` see [here](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/set_1), for more info about `setx` see [here](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/setx)
 
 ### Insufficient CUDA driver
 
@@ -139,11 +134,9 @@ Error: Insufficient CUDA driver: 9010
 
 You have to upgrade your Nvidia drivers. On Linux, install `nvidia-396` package or newer.
 
-
 [Amazon S3 is needed]: https://docs.travis-ci.com/user/uploading-artifacts/
 [AppVeyor]: https://ci.appveyor.com/project/microstack-tech/hashwarp
 [cpp-ethereum]: https://github.com/ethereum/cpp-ethereum
-[Contributors statistics since 2015-08-20]: https://github.com/microstack-tech/hashwarp/graphs/contributors?from=2015-08-20
 [Genoil's fork]: https://github.com/Genoil/cpp-ethereum
 [Gitter]: https://gitter.im/microstack-tech/hashwarp
 [Releases]: https://github.com/microstack-tech/hashwarp/releases

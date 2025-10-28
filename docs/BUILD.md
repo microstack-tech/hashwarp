@@ -22,7 +22,7 @@ This project uses [CMake] and [Hunter] package manager.
 1. [CMake] >= 3.5
 2. [Git](https://git-scm.com/downloads)
 3. [Perl](https://www.perl.org/get.html), needed to build OpenSSL
-4. [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) >= 9.0 (optional, install if you want NVidia CUDA support)
+4. [CUDA 12.2.2 Toolkit](https://developer.nvidia.com/cuda-12-2-2-download-archive) (optional, install if you want NVidia CUDA support)
 
 ### Linux
 
@@ -61,7 +61,7 @@ If you want to use locally installed [ROCm-OpenCL](https://rocmdocs.amd.com/en/l
 
 ### Windows
 
-1. [Visual Studio 2017](https://www.visualstudio.com/downloads/); Community Edition works fine. **Make sure you install MSVC 2015 toolkit (v140).**
+1. [Visual Studio 2017](https://www.visualstudio.com/downloads/); Community Edition works fine.
 
 ## Instructions
 
@@ -84,12 +84,10 @@ If you want to use locally installed [ROCm-OpenCL](https://rocmdocs.amd.com/en/l
     cmake ..
     ```
 
-    **Note:** On Windows, it's possible to have issues with VS 2017 default compilers, due to CUDA expecting a specific toolset version; in that case, use the VS 2017 installer to get the VS 2015 compilers and pass the `-T v140` option:
+    On Windows:
 
     ```shell
     cmake .. -G "Visual Studio 15 2017 Win64"
-    # or this if you have build errors in the CUDA step
-    cmake .. -G "Visual Studio 15 2017 Win64" -T v140
     ```
 
 4. Build the project using [CMake Build Tool Mode]. This is a portable variant of `make`.
@@ -124,6 +122,7 @@ Complete sample Windows batch file - **adapt it to your system**. Assumes that:
 * it's placed one folder up from the hashwarp source folder
 * you have CMake installed
 * you have Perl installed
+* you have CUDA 12.2.2 Toolkit installed (optional, can disable by setting `-DXHASHCUDA=OFF`)
 
 ```bat
 @echo off
@@ -141,7 +140,7 @@ cd "%~dp0\hashwarp\"
 
 if not exist "build\" mkdir "build\"
 
-cmake -G "Visual Studio 15 2017 Win64" -H. -Bbuild -DXHASHCL=ON -DXHASHCUDA=ON -DAPICORE=ON ..
+cmake -G "Visual Studio 15 2017 Win64" -H. -Bbuild -DXHASHCUDA=ON ..
 cmake --build . --config Release --target package
 
 endlocal

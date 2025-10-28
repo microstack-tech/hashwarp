@@ -24,7 +24,7 @@ HunterGate(
 )
 
 project(hashwarp)
-set(PROJECT_VERSION 1.0.0)
+set(PROJECT_VERSION 1.1.0)
 
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release RelWithDebInfo)
 

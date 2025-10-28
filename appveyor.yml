@@ -28,7 +28,6 @@ environment:
 cache:
   - C:\CUDAInstallers\cuda_12.2.2_537.13_windows.exe -> appveyor.yml
 
-# --------- WINDOWS JOB ----------
 for:
   # --------- LINUX JOB (Ubuntu 22.04) ----------
   - matrix:
@@ -39,49 +38,35 @@ for:
       set -e
       export DEBIAN_FRONTEND=noninteractive
       git submodule update --init --recursive
+
       sudo apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=30
-      sudo apt-get install -y --no-install-recommends \
-        build-essential cmake ninja-build git \
-        ocl-icd-opencl-dev opencl-headers clinfo \
-        python3 python3-pip ca-certificates wget gnupg libtinfo5
+      sudo apt install -y build-essential gcc g++ make wget pkg-config gcc-12 g++-12
 
-      python3 -m pip install --disable-pip-version-check --user requests gitpython
-
-      echo "OpenCL platforms (sanity check):"
-      clinfo | sed -n '1,80p' || true
-
-      # --- Pin CUDA 12.2.2 via local deb repository (no driver) ---
-      wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
-      sudo mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
       wget https://developer.download.nvidia.com/compute/cuda/12.2.2/local_installers/cuda-repo-ubuntu2204-12-2-local_12.2.2-535.104.05-1_amd64.deb
       sudo dpkg -i cuda-repo-ubuntu2204-12-2-local_12.2.2-535.104.05-1_amd64.deb
-      # add repo key for the local repo
       sudo cp /var/cuda-repo-ubuntu2204-12-2-local/cuda-*-keyring.gpg /usr/share/keyrings/
-      sudo apt-get update
-      # install just the toolkit (headers, nvcc, libs) – no GPU driver
-      sudo apt-get install -y --no-install-recommends cuda-toolkit-12-2
+      sudo apt update
 
-      # env for CMake/FindCUDAToolkit
-      export CUDA_HOME=/usr/local/cuda-12.2
-      export CUDACXX="$CUDA_HOME/bin/nvcc"
-      export PATH="$CUDA_HOME/bin:$PATH"
-      export LD_LIBRARY_PATH="$CUDA_HOME/lib64:${LD_LIBRARY_PATH:-}"
-       sudo ln -sfn "$CUDA_HOME" /usr/local/cuda  # common fallback path
-       echo "nvcc version:"
-       nvcc -V || true
+      sudo apt install -y --no-install-recommends \
+      cuda-compiler-12-2 cuda-nvcc-12-2 cuda-cudart-dev-12-2 \
+      cuda-libraries-dev-12-2
+
+      echo 'export PATH=/usr/local/cuda-12.2/bin:$PATH' | sudo tee /etc/profile.d/cuda-12-2.sh
+      echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64:${LD_LIBRARY_PATH}' | sudo tee -a /etc/profile.d/cuda-12-2.sh
+      source /etc/profile.d/cuda-12-2.sh
+
+      nvcc -V
 
     build_script: |
       set -e
       # Configure
-      cmake -S . -B build -G Ninja \
-         -DCMAKE_BUILD_TYPE=Release \
-         -DHUNTER_JOBS_NUMBER=$(nproc) \
-         -DXHASH_CUDA_ARCHS="$XHASH_CUDA_ARCHS" \
-         -DCMAKE_CUDA_COMPILER="$CUDACXX" \
-         -DCMAKE_CUDA_ARCHITECTURES="$XHASH_CUDA_ARCHS" \
-         -DCUDAToolkit_ROOT="/usr/local/cuda-12.2"
-
-      cmake --build build --target package -j"$(nproc)"
+      cmake -S . -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DHUNTER_JOBS_NUMBER=$(nproc) \
+        -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.2/bin/nvcc \
+        -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 \
+        -DCMAKE_CUDA_ARCHITECTURES="$XHASH_CUDA_ARCHS"
+      cmake --build build --config Release --target package -j"$(nproc)"
 
       # Try to rename the package similarly to Windows
       # Prefer cpack artifacts if present; otherwise zip/tar the build dir.
@@ -101,6 +86,7 @@ for:
         tar czf build/hashwarp-linux-$(uname -m).tar.gz -C build hashwarp || true
       fi
 
+  # --------- WINDOWS JOB ----------
   - matrix:
       only:
         - image: Visual Studio 2017

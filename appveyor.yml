@@ -65,7 +65,7 @@ for:
         -DHUNTER_JOBS_NUMBER=$(nproc) \
         -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.2/bin/nvcc \
         -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 \
-        -DCMAKE_CUDA_ARCHITECTURES="$XHASH_CUDA_ARCHS"
+        -DXHASH_CUDA_ARCHS="$XHASH_CUDA_ARCHS"
       cmake --build build --config Release --target package -j"$(nproc)"
 
       # Try to rename the package similarly to Windows

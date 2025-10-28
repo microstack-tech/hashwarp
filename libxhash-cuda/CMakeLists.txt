@@ -7,9 +7,15 @@ find_package(CUDAToolkit REQUIRED)
 set(CMAKE_CUDA_STANDARD 11)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-# User-selectable SM list (Pascal→Hopper)
-set(XHASH_CUDA_ARCHS "60;61;62;70;72;75;80;86;87;89;90"
-  CACHE STRING "CUDA SM architectures to build for (e.g. 75;86;89)")
+# User-selectable SM list
+if(NOT CMAKE_CUDA_ARCHITECTURES)
+  if(DEFINED ENV{XHASH_CUDA_ARCHS} AND NOT "$ENV{XHASH_CUDA_ARCHS}" STREQUAL "")
+    set(CMAKE_CUDA_ARCHITECTURES "$ENV{XHASH_CUDA_ARCHS}" CACHE STRING "CUDA archs" FORCE)
+  else()
+    # Reasonable default set covering Pascal→Ada/Hopper (adjust to your support policy)
+    set(CMAKE_CUDA_ARCHITECTURES 60;61;62;70;72;75;80;86;87;89;90 CACHE STRING "CUDA archs" FORCE)
+  endif()
+endif()
 
 file(GLOB sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.cu")
 file(GLOB headers CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.h"   "${CMAKE_CURRENT_SOURCE_DIR}/*.cuh")

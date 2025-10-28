@@ -63,19 +63,23 @@ for:
 
       # env for CMake/FindCUDAToolkit
       export CUDA_HOME=/usr/local/cuda-12.2
-      export PATH=$CUDA_HOME/bin:$PATH
-      export LD_LIBRARY_PATH=$CUDA_HOME/lib64:${LD_LIBRARY_PATH:-}
-      sudo ln -sfn "$CUDA_HOME" /usr/local/cuda  # common fallback path
-      echo "nvcc version:"
-      nvcc -V || true
+      export CUDACXX="$CUDA_HOME/bin/nvcc"
+      export PATH="$CUDA_HOME/bin:$PATH"
+      export LD_LIBRARY_PATH="$CUDA_HOME/lib64:${LD_LIBRARY_PATH:-}"
+       sudo ln -sfn "$CUDA_HOME" /usr/local/cuda  # common fallback path
+       echo "nvcc version:"
+       nvcc -V || true
 
     build_script: |
       set -e
       # Configure
       cmake -S . -B build -G Ninja \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DHUNTER_JOBS_NUMBER=$(nproc) \
-        -DXHASH_CUDA_ARCHS="$XHASH_CUDA_ARCHS"
+         -DCMAKE_BUILD_TYPE=Release \
+         -DHUNTER_JOBS_NUMBER=$(nproc) \
+         -DXHASH_CUDA_ARCHS="$XHASH_CUDA_ARCHS" \
+         -DCMAKE_CUDA_COMPILER="$CUDACXX" \
+         -DCMAKE_CUDA_ARCHITECTURES="$XHASH_CUDA_ARCHS" \
+         -DCUDAToolkit_ROOT="/usr/local/cuda-12.2"
 
       cmake --build build --target package -j"$(nproc)"
 

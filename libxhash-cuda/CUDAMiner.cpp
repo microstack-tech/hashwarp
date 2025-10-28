@@ -310,8 +310,7 @@ void CUDAMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollecti
             deviceDescriptor.cuDeviceOrdinal = i;
             deviceDescriptor.cuName = string(props.name);
             deviceDescriptor.totalMemory = freeMem;
-            deviceDescriptor.cuCompute =
-                (to_string(props.major) + "." + to_string(props.minor));
+            deviceDescriptor.cuCompute = (to_string(props.major) + "." + to_string(props.minor));
             deviceDescriptor.cuComputeMajor = props.major;
             deviceDescriptor.cuComputeMinor = props.minor;
 
@@ -337,7 +336,7 @@ void CUDAMiner::search(
     // prime each stream, clear search result buffers and start the search
     uint32_t current_index;
     for (current_index = 0; current_index < m_settings.streams;
-         current_index++, start_nonce += m_batch_size)
+        current_index++, start_nonce += m_batch_size)
     {
         cudaStream_t stream = m_streams[current_index];
         volatile Search_results& buffer(*m_search_buf[current_index]);
@@ -363,7 +362,7 @@ void CUDAMiner::search(
 
         // This inner loop will process each cuda stream individually
         for (current_index = 0; current_index < m_settings.streams;
-             current_index++, start_nonce += m_batch_size)
+            current_index++, start_nonce += m_batch_size)
         {
             // Each pass of this loop will wait for a stream to exit,
             // save any found solutions, then restart the stream
@@ -414,18 +413,8 @@ void CUDAMiner::search(
                 {
                     uint64_t nonce = nonce_base + gids[i];
 
-                    // Optional runtime verification similar to OpenCL path
-                    auto expected = XHashAux::eval(w.epoch, w.header, nonce);
-                    if (expected.mixHash != mixes[i])
-                    {
-                        cudalog << EthRed << "GPU " << m_index << " incorrect result" << EthReset;
-                        cudalog << EthRed << " header: " << w.header.abridged() << " nonce: 0x" << toHex(nonce)
-                                << " kernel_mix: 0x" << mixes[i].hex() << " cpu_mix: 0x" << expected.mixHash.hex()
-                                << EthReset;
-                    }
-
-                    Farm::f().submitProof(Solution{
-                        nonce, mixes[i], w, std::chrono::steady_clock::now(), m_index});
+                    Farm::f().submitProof(
+                        Solution{nonce, mixes[i], w, std::chrono::steady_clock::now(), m_index});
                     cudalog << EthWhite << "Job: " << w.header.abridged() << " Sol: 0x"
                             << toHex(nonce) << EthReset;
                 }

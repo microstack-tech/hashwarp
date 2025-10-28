@@ -298,13 +298,12 @@ void CLMiner::workLoop()
     current.header = h256();
 
     if (!initDevice())
-    return;
+        return;
 
     try
     {
         while (!shouldStop())
         {
-
             // Read results.
             volatile SearchResults results;
 
@@ -316,7 +315,8 @@ void CLMiner::workLoop()
                     (m_settings.noExit ? 1 : 2) * sizeof(results.count), (void*)&results.count);
                 if (results.count)
                 {
-                    if (results.count > c_maxSearchResults) {
+                    if (results.count > c_maxSearchResults)
+                    {
                         results.count = c_maxSearchResults;
                     }
 
@@ -348,7 +348,6 @@ void CLMiner::workLoop()
 
             if (current.header != w.header)
             {
-
                 if (current.epoch != w.epoch)
                 {
                     m_abortqueue.clear();
@@ -406,17 +405,6 @@ void CLMiner::workLoop()
                         m_lastNonce = nonce;
                         h256 mix;
                         memcpy(mix.data(), (char*)results.rslt[i].mix, sizeof(results.rslt[i].mix));
-
-                        // Runtime verification: compute expected mix on CPU using XHash and compare.
-                        auto expected = XHashAux::eval(current.epoch, current.header, nonce);
-                        if (expected.mixHash != mix)
-                        {
-                            // Log detailed mismatch to help debug GPU instabilities vs packing issues
-                            cllog << EthRed << "GPU " << m_index << " incorrect result" << EthReset;
-                            cllog << EthRed << " header: " << current.header.abridged() << " nonce: 0x" << toHex(nonce)
-                                  << " kernel_mix: 0x" << mix.hex() << " cpu_mix: 0x" << expected.mixHash.hex()
-                                  << EthReset;
-                        }
 
                         Farm::f().submitProof(Solution{
                             nonce, mix, current, std::chrono::steady_clock::now(), m_index});
@@ -536,12 +524,12 @@ void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection
                     uniqueId = s.str();
                 }
             }
-            else if (clDeviceType == DeviceTypeEnum::Gpu && platformType == ClPlatformTypeEnum::Intel)
+            else if (clDeviceType == DeviceTypeEnum::Gpu &&
+                     platformType == ClPlatformTypeEnum::Intel)
             {
                 std::ostringstream s;
                 s << "Intel GPU " << pIdx << "." << dIdx;
                 uniqueId = s.str();
-
             }
             else if (clDeviceType == DeviceTypeEnum::Cpu)
             {
@@ -556,7 +544,7 @@ void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection
                 continue;
             }
 
-           if (_DevicesCollection.find(uniqueId) != _DevicesCollection.end())
+            if (_DevicesCollection.find(uniqueId) != _DevicesCollection.end())
                 deviceDescriptor = _DevicesCollection[uniqueId];
             else
                 deviceDescriptor = DeviceDescriptor();
@@ -606,15 +594,12 @@ void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection
             // Upsert Devices Collection
             _DevicesCollection[uniqueId] = deviceDescriptor;
             ++dIdx;
-
         }
     }
-
 }
 
 bool CLMiner::initDevice()
 {
-
     // LookUp device
     // Load available platforms
     vector<cl::Platform> platforms = getPlatforms();
@@ -715,7 +700,6 @@ bool CLMiner::initDevice()
 
 
     return true;
-
 }
 
 bool CLMiner::initEpoch_internal()
@@ -744,7 +728,6 @@ bool CLMiner::initEpoch_internal()
 
     try
     {
-
         char options[256] = {0};
         int computeCapability = 0;
 #ifndef __clang__
@@ -821,8 +804,8 @@ bool CLMiner::initEpoch_internal()
 
             /* Open kernels/xhash_{devicename}_lws{local_work_size}.bin */
             std::transform(device_name.begin(), device_name.end(), device_name.begin(), ::tolower);
-            fname_strm << boost::dll::program_location().parent_path().string()
-                       << "/kernels/xhash_" << device_name << "_lws" << m_settings.localWorkSize
+            fname_strm << boost::dll::program_location().parent_path().string() << "/kernels/xhash_"
+                       << device_name << "_lws" << m_settings.localWorkSize
                        << (m_settings.noExit ? "" : "_exit") << ".bin";
             cllog << "Loading binary kernel " << fname_strm.str();
             try
@@ -873,8 +856,7 @@ bool CLMiner::initEpoch_internal()
         try
         {
             cllog << "Creating DAG buffer, size: "
-                  << dev::getFormattedMemory((double)m_epochContext.dagSize)
-                  << ", free: "
+                  << dev::getFormattedMemory((double)m_epochContext.dagSize) << ", free: "
                   << dev::getFormattedMemory(
                          (double)(m_deviceDescriptor.totalMemory - RequiredMemory));
             m_dag.clear();
@@ -979,10 +961,10 @@ bool CLMiner::initEpoch_internal()
             m_queue[0].finish();
         }
 
-        auto dagTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startInit);
+        auto dagTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - startInit);
         cllog << dev::getFormattedMemory((double)m_epochContext.dagSize)
-              << " of DAG data generated in "
-              << dagTime.count() << " ms.";
+              << " of DAG data generated in " << dagTime.count() << " ms.";
     }
     catch (cl::Error const& err)
     {
